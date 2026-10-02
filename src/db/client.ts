@@ -1,19 +1,20 @@
 import "server-only";
 
-import { mkdirSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { resolve } from "node:path";
 
-import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 
 import { env } from "@/lib/env";
 
+import { openSqliteConnection } from "./connection";
 import * as schema from "./schema";
 
 /**
  * SQLite connection and Drizzle instance. Server-only: importing this from a
  * Client Component will fail the build, which keeps database access out of the
  * browser bundle (API_CONTRACT.md §1.1 — the AI service is also server-side).
+ *
+ * The raw handle is created by `./connection`, which the seed script shares.
  */
 
 export type Database_ = ReturnType<typeof drizzle<typeof schema>>;
@@ -25,27 +26,13 @@ function resolveDatabasePath(databaseUrl: string): string {
   return resolve(/* turbopackIgnore: true */ process.cwd(), databaseUrl.replace(/^file:/, ""));
 }
 
-function createConnection(): Database.Database {
-  const path = resolveDatabasePath(env.databaseUrl);
-
-  mkdirSync(dirname(path), { recursive: true });
-
-  const sqlite = new Database(path);
-
-  // Required for the cascade deletes declared in the schema to actually fire.
-  sqlite.pragma("foreign_keys = ON");
-  sqlite.pragma("journal_mode = WAL");
-
-  return sqlite;
-}
-
 /**
  * Cached on `globalThis` so Next.js hot reloads in development do not open a
  * new file handle on every recompile.
  */
-const globalForDb = globalThis as unknown as { __upaySqlite?: Database.Database };
+const globalForDb = globalThis as unknown as { __upaySqlite?: ReturnType<typeof openSqliteConnection> };
 
-const sqlite = globalForDb.__upaySqlite ?? createConnection();
+const sqlite = globalForDb.__upaySqlite ?? openSqliteConnection(resolveDatabasePath(env.databaseUrl));
 
 if (process.env.NODE_ENV !== "production") {
   globalForDb.__upaySqlite = sqlite;
@@ -53,3 +40,11 @@ if (process.env.NODE_ENV !== "production") {
 
 export const db: Database_ = drizzle(sqlite, { schema });
 export { schema };
+
+/**
+ * The transaction handle passed to a `db.transaction` callback. Exported so
+ * multi-step writes (payment + registration + ticket) can share one helper
+ * signature. `better-sqlite3` transactions are synchronous, so a callback must
+ * use the `.run()` / `.all()` / `.get()` query methods and never `await`.
+ */
+export type DatabaseTransaction = Parameters<Parameters<Database_["transaction"]>[0]>[0];
