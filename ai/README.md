@@ -1,0 +1,1 @@
+AI service: data generator, model, forecasts
