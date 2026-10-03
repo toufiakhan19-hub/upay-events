@@ -1,6 +1,20 @@
 .env
 .env.*
+!.env.example
 *.db
+*.db-journal
+*.db-wal
+*.db-shm
 __pycache__/
 .venv/
 node_modules/
+
+# Next.js
+/.next/
+/out/
+/build/
+next-env.d.ts
+*.tsbuildinfo
+.vercel
+
+.DS_Store
