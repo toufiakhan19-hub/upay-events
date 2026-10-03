@@ -313,6 +313,35 @@ function isStaleForecast(createdAt: string, persistedIsStale: boolean): boolean 
   return Date.now() - generatedAt > FORECAST_STALE_AFTER_MS;
 }
 
+/**
+ * One `event_forecasts` row → the shape every reader renders.
+ *
+ * Exported because `src/server/forecast/forecast.ts` reads a row straight back after
+ * persisting it. Sharing the mapping is what guarantees the value an organizer sees
+ * immediately after a refresh is identical to the one the dashboard would read on the
+ * next page load — including the staleness rule, which is derived here rather than
+ * decided by each caller.
+ */
+export function toPersistedEventForecast(row: typeof eventForecasts.$inferSelect): PersistedEventForecast {
+  return {
+    id: row.id,
+    // The schema has one timestamp for a forecast: when this row was written. The AI
+    // service's own `generated_at` is not stored separately.
+    generatedAt: row.createdAt,
+    modelVersion: row.modelVersion,
+    paidRegistrations: row.paidRegistrations,
+    predictedAttendance: row.predictedAttendance,
+    predictedNoShows: row.predictedNoShows,
+    noShowRate: row.noShowRate,
+    recommendedWaitlist: row.recommendedWaitlist,
+    confidence: row.confidence,
+    confidenceLabel: row.confidenceLabel,
+    topReasons: row.topReasons,
+    isStale: isStaleForecast(row.createdAt, row.isStale),
+    recommendation: row.recommendation,
+  };
+}
+
 async function readLatestForecasts(
   eventIds: string[],
 ): Promise<Map<string, PersistedEventForecast>> {
@@ -335,21 +364,7 @@ async function readLatestForecasts(
       continue;
     }
 
-    latest.set(row.eventId, {
-      id: row.id,
-      generatedAt: row.createdAt,
-      modelVersion: row.modelVersion,
-      paidRegistrations: row.paidRegistrations,
-      predictedAttendance: row.predictedAttendance,
-      predictedNoShows: row.predictedNoShows,
-      noShowRate: row.noShowRate,
-      recommendedWaitlist: row.recommendedWaitlist,
-      confidence: row.confidence,
-      confidenceLabel: row.confidenceLabel,
-      topReasons: row.topReasons,
-      isStale: isStaleForecast(row.createdAt, row.isStale),
-      recommendation: row.recommendation,
-    });
+    latest.set(row.eventId, toPersistedEventForecast(row));
   }
 
   return latest;
