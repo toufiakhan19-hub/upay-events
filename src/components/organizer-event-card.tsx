@@ -94,12 +94,21 @@ export function OrganizerEventCard({ event }: { event: OrganizerEventSummary }) 
             : "No cancelled registrations."}
         </p>
 
-        <Link
-          href={`/organizer/events/${event.id}`}
-          className="rounded-md bg-brand px-3 py-1.5 text-sm font-medium whitespace-nowrap text-brand-foreground hover:opacity-90"
-        >
-          Open dashboard
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/organizer/events/${event.id}/checkin`}
+            className="rounded-md border border-border px-3 py-1.5 text-sm font-medium whitespace-nowrap hover:bg-muted"
+          >
+            Check-in
+          </Link>
+
+          <Link
+            href={`/organizer/events/${event.id}`}
+            className="rounded-md bg-brand px-3 py-1.5 text-sm font-medium whitespace-nowrap text-brand-foreground hover:opacity-90"
+          >
+            Open dashboard
+          </Link>
+        </div>
       </div>
     </article>
   );

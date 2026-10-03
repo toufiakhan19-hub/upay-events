@@ -127,6 +127,21 @@ export default async function OrganizerEventDashboardPage({ params }: EventDashb
               )}
             </dd>
           </div>
+
+          <div className="flex flex-col gap-1">
+            <dt className="text-muted-foreground">Check-in</dt>
+            <dd>
+              <Link
+                href={`/organizer/events/${event.id}/checkin`}
+                className="inline-block rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-brand-foreground hover:opacity-90"
+              >
+                Open the check-in screen
+              </Link>
+              <span className="block text-xs text-muted-foreground">
+                Scan QR codes or type a ticket ID at the door.
+              </span>
+            </dd>
+          </div>
         </dl>
       </section>
 
@@ -240,8 +255,11 @@ export default async function OrganizerEventDashboardPage({ params }: EventDashb
 
           {attendance.checkedInAttendees === 0 ? (
             <p className="mt-4 text-xs text-muted-foreground">
-              Check-in scanning is not part of this build yet, so attendance is genuinely zero here.
-              The moment staff scan a ticket the count moves — nothing here is estimated.
+              No ticket has been scanned yet. Staff check attendees in on the{" "}
+              <Link href={`/organizer/events/${event.id}/checkin`} className="underline">
+                check-in screen
+              </Link>
+              , and this count moves the moment they do — nothing here is estimated.
             </p>
           ) : null}
         </div>
