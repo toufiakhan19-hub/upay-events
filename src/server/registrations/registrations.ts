@@ -42,9 +42,20 @@ export type RegisterResult =
     }
   | { ok: false; reason: RegistrationFailureReason };
 
-/** Registrations that hold a seat: everything except a cancellation. */
-function heldSeatsFilter(eventId: string) {
-  return and(eq(registrations.eventId, eventId), ne(registrations.status, "cancelled"));
+/**
+ * Registrations that hold a seat: everything except a cancellation.
+ *
+ * Exported as its own condition because the organizer dashboard reports the
+ * same capacity rule from a grouped query over many events
+ * (`src/server/organizers/queries.ts`). One definition, two callers.
+ */
+export function heldSeatCondition() {
+  return ne(registrations.status, "cancelled");
+}
+
+/** Registrations that hold a seat for one event. */
+export function heldSeatsFilter(eventId: string) {
+  return and(eq(registrations.eventId, eventId), heldSeatCondition());
 }
 
 function countHeldSeatsInTransaction(tx: DatabaseTransaction, eventId: string): number {

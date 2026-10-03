@@ -29,6 +29,13 @@ export async function SiteHeader() {
             Events
           </Link>
 
+          <Link
+            href="/organizer"
+            className="rounded-md px-3 py-1.5 font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            Organizer
+          </Link>
+
           {user ? (
             <>
               <Link
