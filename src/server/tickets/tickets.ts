@@ -4,7 +4,7 @@ import { and, asc, eq } from "drizzle-orm";
 
 import { db, type DatabaseTransaction } from "@/db/client";
 import { events, registrations, tickets, users } from "@/db/schema";
-import type { TicketStatus } from "@/db/enums";
+import type { EventCategory, TicketStatus } from "@/db/enums";
 import { newId, newOpaqueToken } from "@/lib/ids";
 
 /**
@@ -32,6 +32,7 @@ export type TicketSummary = {
   status: TicketStatusValue;
   eventTitle: string;
   eventSlug: string;
+  eventCategory: EventCategory;
   dateTime: string;
   venue: string;
 };
@@ -99,6 +100,7 @@ export async function listTicketsForUser(userId: string): Promise<TicketSummary[
       status: tickets.status,
       eventTitle: events.title,
       eventSlug: events.slug,
+      eventCategory: events.category,
       dateTime: events.dateTime,
       venue: events.venue,
     })
@@ -128,6 +130,7 @@ export async function getTicketForUser(
       issuedAt: tickets.issuedAt,
       eventTitle: events.title,
       eventSlug: events.slug,
+      eventCategory: events.category,
       dateTime: events.dateTime,
       venue: events.venue,
       attendeeName: users.name,

@@ -3,6 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CheckInConsole } from "@/components/checkin-console";
+import { CategoryTile } from "@/components/ui/category-tile";
+import { ArrowLeftIcon } from "@/components/ui/icons";
+import { Pill } from "@/components/ui/pill";
 import {
   categoryLabel,
   eventStatusLabel,
@@ -47,31 +50,27 @@ export default async function OrganizerEventCheckInPage({ params }: CheckInPageP
   const { event } = state;
 
   return (
-    <div className="flex flex-col gap-8">
-      <header className="flex flex-col gap-3">
-        <Link
-          href={`/organizer/events/${event.id}`}
-          className="text-xs text-muted-foreground underline"
-        >
-          Back to {event.title} dashboard
-        </Link>
+    <div className="flex flex-col gap-6">
+      <Link
+        href={`/organizer/events/${event.id}`}
+        className="flex w-fit items-center gap-1 text-xs font-bold text-upay-blue hover:underline"
+      >
+        <ArrowLeftIcon className="size-4" />
+        Back to {event.title} dashboard
+      </Link>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-            {categoryLabel(event.category)}
-          </span>
-          <span className="rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground">
-            {eventStatusLabel(event.status)}
-          </span>
-          <span className="text-xs text-muted-foreground">{locationTypeLabel(event.locationType)}</span>
-        </div>
-
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+      <header className="event-card flex flex-wrap items-center gap-4 rounded-card p-3 shadow-card">
+        <CategoryTile category={event.category} className="size-20 shrink-0 rounded-2xl" iconClassName="size-8" />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Pill>{categoryLabel(event.category)}</Pill>
+            <Pill>{eventStatusLabel(event.status)}</Pill>
+            <Pill>{locationTypeLabel(event.locationType)}</Pill>
+          </div>
+          <h1 className="mt-2 text-xl font-extrabold tracking-tight text-upay-navy sm:text-2xl">
             Check-in · {event.title}
           </h1>
-
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs font-medium text-upay-navy/55 sm:text-sm">
             <time dateTime={event.dateTime}>{formatEventDate(event.dateTime)}</time>
             {" · "}
             <time dateTime={event.dateTime}>{formatEventTime(event.dateTime)}</time>
@@ -87,7 +86,7 @@ export default async function OrganizerEventCheckInPage({ params }: CheckInPageP
         initialState={state}
       />
 
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs font-medium text-upay-navy/45">
         {organizer.organizationName} · check-in is scoped to this organization, and each ticket can
         be used once. QR codes carry a random token only — no name, phone number, or payment data —
         and scan results show no attendee information.

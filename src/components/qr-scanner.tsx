@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
 
+import { buttonClass } from "@/components/ui/button-styles";
+import { ScanIcon } from "@/components/ui/icons";
+
 /**
  * Camera QR scanning for the check-in console.
  *
@@ -179,7 +182,7 @@ export function QrScanner({ onDetect, disabled = false }: QrScannerProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative overflow-hidden rounded-xl border border-border bg-muted">
+      <div className="hero-banner relative overflow-hidden rounded-hero shadow-hero">
         {/* Always mounted so the stream can attach without a remount. */}
         <video
           ref={videoRef}
@@ -190,9 +193,12 @@ export function QrScanner({ onDetect, disabled = false }: QrScannerProps) {
         />
 
         {!isScanning ? (
-          <div className="flex aspect-square w-full flex-col items-center justify-center gap-2 p-6 text-center">
-            <p className="text-sm font-medium">Camera scanner</p>
-            <p className="text-xs text-muted-foreground">
+          <div className="flex aspect-square w-full flex-col items-center justify-center gap-3 p-6 text-center text-white">
+            <span className="grid size-16 place-items-center rounded-2xl border-2 border-dashed border-white/60 bg-white/10">
+              <ScanIcon className="size-8" />
+            </span>
+            <p className="text-base font-extrabold">Camera scanner</p>
+            <p className="max-w-xs text-xs font-medium text-white/80">
               Point the camera at an attendee&apos;s QR code. Nothing is recorded or uploaded — the
               code is decoded in this browser and only the ticket token is sent.
             </p>
@@ -204,7 +210,7 @@ export function QrScanner({ onDetect, disabled = false }: QrScannerProps) {
       </div>
 
       {error ? (
-        <p role="alert" className="text-sm text-amber-600 dark:text-amber-400">
+        <p role="alert" className="text-sm font-medium text-amber-700">
           {error}
         </p>
       ) : null}
@@ -214,7 +220,7 @@ export function QrScanner({ onDetect, disabled = false }: QrScannerProps) {
           <button
             type="button"
             onClick={stopCamera}
-            className="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted"
+            className={buttonClass("outline", "md")}
           >
             Stop camera
           </button>
@@ -223,13 +229,13 @@ export function QrScanner({ onDetect, disabled = false }: QrScannerProps) {
             type="button"
             onClick={startCamera}
             disabled={disabled || cameraState === "starting"}
-            className="rounded-md bg-brand px-3 py-2 text-sm font-semibold text-brand-foreground hover:opacity-90 disabled:opacity-60"
+            className={buttonClass("primary", "md")}
           >
             {cameraState === "starting" ? "Opening camera…" : "Start camera"}
           </button>
         )}
 
-        <span className="text-xs text-muted-foreground">
+        <span className="text-xs font-medium text-upay-navy/50">
           {isScanning
             ? "Scanning. A code is ignored briefly after a hit so one ticket is not admitted twice."
             : "Manual ticket ID below always works, camera or not."}

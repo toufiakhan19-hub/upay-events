@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 
+import { buttonClass } from "@/components/ui/button-styles";
+
 import { payAction, type PayActionState } from "./actions";
 
 const INITIAL_STATE: PayActionState = { error: null };
@@ -26,7 +28,7 @@ export function PayPanel({ eventSlug, amountLabel }: { eventSlug: string; amount
         name="outcome"
         value="success"
         disabled={pending}
-        className="w-full rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground hover:opacity-90 disabled:opacity-60"
+        className={buttonClass("primary", "lg", "w-full font-extrabold")}
       >
         {pending ? "Contacting upay…" : `Pay ${amountLabel} with upay`}
       </button>
@@ -36,13 +38,13 @@ export function PayPanel({ eventSlug, amountLabel }: { eventSlug: string; amount
         name="outcome"
         value="failure"
         disabled={pending}
-        className="w-full rounded-md border border-border px-4 py-2.5 text-sm font-semibold hover:bg-muted disabled:opacity-60"
+        className={buttonClass("outline", "md", "w-full")}
       >
         Simulate a declined payment
       </button>
 
       {state.error ? (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <p role="alert" className="text-sm font-medium text-red-600">
           {state.error}
         </p>
       ) : null}

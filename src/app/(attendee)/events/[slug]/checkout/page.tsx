@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import { Card } from "@/components/ui/card";
+import { CategoryTile } from "@/components/ui/category-tile";
+import { ArrowLeftIcon } from "@/components/ui/icons";
 import { formatTaka } from "@/lib/format";
 import { requireCurrentUser } from "@/server/auth/session";
 import { getPublishedEventBySlug } from "@/server/events/queries";
@@ -53,51 +56,67 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-lg flex-col gap-8">
-      <header className="flex flex-col gap-2">
-        <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Checkout
-        </p>
-        <h1 className="text-2xl font-semibold tracking-tight">{event.title}</h1>
-        <p className="text-sm text-muted-foreground">
-          <EventDateTime dateTime={event.dateTime} /> · {event.venue}
-        </p>
-      </header>
+    <div className="mx-auto flex w-full max-w-lg flex-col gap-5">
+      <Link
+        href={`/events/${event.slug}`}
+        className="flex w-fit items-center gap-1 text-xs font-bold text-upay-blue hover:underline"
+      >
+        <ArrowLeftIcon className="size-4" />
+        Back to event
+      </Link>
 
-      <section className="flex flex-col gap-4 rounded-xl border border-border p-5">
-        <h2 className="text-sm font-semibold tracking-tight uppercase">Payment summary</h2>
+      <Card className="event-card flex items-center gap-4 p-3">
+        <CategoryTile category={event.category} className="size-20 shrink-0 rounded-2xl" iconClassName="size-8" />
+        <div className="min-w-0">
+          <p className="text-[0.6875rem] font-bold tracking-[0.12em] text-upay-blue/70 uppercase">
+            Checkout
+          </p>
+          <h1 className="truncate text-lg font-extrabold tracking-tight text-upay-navy">
+            {event.title}
+          </h1>
+          <p className="text-xs font-medium text-upay-navy/55">
+            <EventDateTime dateTime={event.dateTime} /> · {event.venue}
+          </p>
+        </div>
+      </Card>
 
-        <dl className="flex flex-col gap-2 text-sm">
+      <Card as="section" className="flex flex-col gap-5 p-5 lg:p-6">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-logo bg-upay-yellow text-lg font-black text-upay-blue shadow-logo">
+            U
+          </span>
+          <h2 className="text-sm font-extrabold text-upay-navy">Payment summary</h2>
+        </div>
+
+        <dl className="flex flex-col gap-2.5 text-sm">
           <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Attendee</dt>
-            <dd className="text-right">{user.name}</dd>
+            <dt className="text-upay-navy/50">Attendee</dt>
+            <dd className="text-right font-semibold text-upay-navy">{user.name}</dd>
           </div>
           <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Phone</dt>
-            <dd className="text-right">{user.phone}</dd>
+            <dt className="text-upay-navy/50">Phone</dt>
+            <dd className="text-right font-semibold text-upay-navy">{user.phone}</dd>
           </div>
           <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Ticket price</dt>
-            <dd className="text-right">{formatTaka(event.priceTaka)}</dd>
+            <dt className="text-upay-navy/50">Ticket price</dt>
+            <dd className="text-right font-semibold text-upay-navy">
+              {formatTaka(event.priceTaka)}
+            </dd>
           </div>
-          <div className="flex justify-between gap-4 border-t border-border pt-2 text-base font-semibold">
-            <dt>Total</dt>
-            <dd>{formatTaka(event.priceTaka)}</dd>
+          <div className="mt-1 flex items-end justify-between gap-4 border-t border-dashed border-upay-blue/15 pt-3">
+            <dt className="font-bold text-upay-navy">Total</dt>
+            <dd className="text-2xl font-extrabold text-upay-blue">{formatTaka(event.priceTaka)}</dd>
           </div>
         </dl>
 
         <PayPanel eventSlug={event.slug} amountLabel={formatTaka(event.priceTaka)} />
 
-        <p className="text-xs text-muted-foreground">
+        <p className="rounded-2xl bg-upay-blue-soft p-3 text-xs font-medium text-upay-navy/65">
           Simulated upay checkout for this demo. No card or wallet details are collected, no
           upay account is touched, and no money moves. A successful payment issues your QR ticket
           immediately.
         </p>
-      </section>
-
-      <Link href={`/events/${event.slug}`} className="w-fit text-xs underline">
-        Back to event
-      </Link>
+      </Card>
     </div>
   );
 }

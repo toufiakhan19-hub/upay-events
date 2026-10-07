@@ -34,11 +34,11 @@ export function ShareEvent({ slug, title, when }: { slug: string; title: string;
   }
 
   const buttonClass =
-    "flex-1 rounded-md border border-border px-2 py-2 text-center text-xs font-medium whitespace-nowrap hover:bg-muted";
+    "flex-1 rounded-xl bg-upay-blue-soft px-2 py-2 text-center text-xs font-bold whitespace-nowrap text-upay-blue transition-colors hover:bg-upay-yellow hover:text-upay-navy";
 
   return (
-    <div className="flex flex-col gap-2 border-t border-border pt-3">
-      <p className="text-xs font-medium">Invite friends</p>
+    <div className="flex flex-col gap-2 border-t border-upay-blue/8 pt-4">
+      <p className="text-xs font-extrabold text-upay-navy">Invite friends</p>
       <div className="flex gap-2">
         <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={buttonClass}>
           WhatsApp

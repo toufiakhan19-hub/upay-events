@@ -1,5 +1,9 @@
 import Link from "next/link";
 
+import { buttonClass } from "@/components/ui/button-styles";
+import { Card } from "@/components/ui/card";
+import { HostIcon } from "@/components/ui/icons";
+
 /**
  * 404 inside the organizer segment.
  *
@@ -10,19 +14,21 @@ import Link from "next/link";
  */
 export default function OrganizerEventNotFound() {
   return (
-    <div className="flex flex-col items-start gap-4 py-16">
-      <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">404</p>
-      <h1 className="text-2xl font-semibold tracking-tight">That event is not on your dashboard</h1>
-      <p className="max-w-md text-sm text-muted-foreground">
+    <Card className="event-card flex max-w-lg flex-col items-start gap-4 p-7">
+      <span className="grid size-11 place-items-center rounded-full bg-upay-yellow-soft text-upay-blue">
+        <HostIcon className="size-5" />
+      </span>
+      <p className="text-[0.6875rem] font-bold tracking-[0.12em] text-upay-blue/70 uppercase">404</p>
+      <h1 className="text-2xl font-extrabold tracking-tight text-upay-navy">
+        That event is not on your dashboard
+      </h1>
+      <p className="text-sm text-upay-navy/55">
         The event does not exist, or it belongs to a different organization. Organizers only ever see
         their own events.
       </p>
-      <Link
-        href="/organizer"
-        className="w-fit rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted"
-      >
+      <Link href="/organizer" className={buttonClass("primary")}>
         Back to your events
       </Link>
-    </div>
+    </Card>
   );
 }

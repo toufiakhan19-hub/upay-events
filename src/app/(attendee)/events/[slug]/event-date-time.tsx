@@ -6,7 +6,7 @@ export function EventDateTime({ dateTime }: { dateTime: string }) {
     <span className="flex flex-wrap items-baseline gap-x-2">
       <time dateTime={dateTime}>{formatEventDate(dateTime)}</time>
       <time dateTime={dateTime}>{formatEventTime(dateTime)}</time>
-      <span className="text-xs text-muted-foreground">(UTC+06:00)</span>
+      <span className="text-xs font-medium text-upay-navy/45">(UTC+06:00)</span>
     </span>
   );
 }

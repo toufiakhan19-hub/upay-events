@@ -11,6 +11,8 @@ import {
 import type { CheckInScanOutcome } from "@/server/checkin/checkin";
 import type { CheckInLiveState } from "@/server/checkin/queries";
 
+import { buttonClass } from "./ui/button-styles";
+
 import { QrScanner } from "./qr-scanner";
 
 /**
@@ -76,11 +78,11 @@ function ForecastPanel({ state }: { state: CheckInLiveState }) {
 
   if (!comparison || !forecast) {
     return (
-      <div className="flex flex-col gap-1">
-        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+      <div className="flex flex-col gap-1 rounded-2xl bg-upay-blue-soft/70 p-4">
+        <p className="text-[0.625rem] font-bold tracking-wide text-upay-navy/45 uppercase">
           Forecast comparison
         </p>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm font-medium text-upay-navy/60">
           No attendance forecast is cached for this event yet, so there is nothing to compare the
           live count against. The panel appears once the AI service writes a forecast — the live
           count above is real either way.
@@ -93,23 +95,32 @@ function ForecastPanel({ state }: { state: CheckInLiveState }) {
   const onForecast = comparison.difference === 0;
 
   return (
-    <div className="flex flex-col gap-2">
-      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+    <div className="recommendation-card flex flex-col gap-2 rounded-2xl border border-upay-yellow/45 p-4">
+      <p className="text-[0.625rem] font-bold tracking-wide text-upay-navy/55 uppercase">
         Forecast comparison
       </p>
 
-      <p className="text-sm">
-        <span className="text-2xl font-semibold tracking-tight tabular-nums">
+      <p className="text-sm font-medium text-upay-navy">
+        <span className="text-2xl font-extrabold tracking-tight tabular-nums">
           {formatCount(comparison.checkedInAttendees)}
         </span>{" "}
         checked in against a predicted{" "}
-        <span className="font-medium tabular-nums">
+        <span className="font-extrabold tabular-nums">
           {formatDecimal(comparison.predictedAttendance)}
         </span>{" "}
         attendees.
       </p>
 
-      <p className="text-xs text-muted-foreground">
+      <div className="h-2.5 overflow-hidden rounded-full bg-white/80">
+        <div
+          className="forecast-progress h-full rounded-full"
+          style={{
+            width: `${comparison.predictedAttendance <= 0 ? 0 : Math.min(100, (comparison.checkedInAttendees / comparison.predictedAttendance) * 100)}%`,
+          }}
+        />
+      </div>
+
+      <p className="text-xs font-medium text-upay-navy/55">
         {onForecast
           ? "Live attendance has landed exactly on the forecast."
           : ahead
@@ -132,7 +143,7 @@ function ResultBanner({
 }) {
   if (status.kind === "idle") {
     return (
-      <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+      <p className="rounded-card border border-upay-blue/10 bg-white/80 p-4 text-sm font-medium text-upay-navy/60 shadow-chip">
         Scan a ticket or type a ticket ID. Each ticket can be used once.
       </p>
     );
@@ -142,7 +153,7 @@ function ResultBanner({
     return (
       <p
         role="status"
-        className="rounded-xl border border-border bg-muted/40 p-4 text-sm font-medium"
+        className="rounded-card border border-upay-yellow/50 bg-upay-yellow-soft p-4 text-sm font-bold text-upay-navy shadow-chip"
       >
         Checking the ticket…
       </p>
@@ -153,7 +164,7 @@ function ResultBanner({
     return (
       <p
         role="alert"
-        className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+        className="rounded-card border border-red-300 bg-red-50 p-4 text-sm font-medium text-red-700 shadow-chip"
       >
         {status.message}
       </p>
@@ -167,7 +178,7 @@ function ResultBanner({
     return (
       <div
         role="status"
-        className="rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300"
+        className="rounded-card border border-emerald-300 bg-emerald-50 p-4 text-emerald-800 shadow-chip"
       >
         <p className="text-base font-semibold">Checked in</p>
         <p className="text-sm">
@@ -188,7 +199,7 @@ function ResultBanner({
     return (
       <div
         role="status"
-        className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300"
+        className="rounded-card border border-amber-300 bg-amber-50 p-4 text-amber-900 shadow-chip"
       >
         <p className="text-base font-semibold">Already checked in</p>
         <p className="text-sm">
@@ -209,7 +220,7 @@ function ResultBanner({
   return (
     <div
       role="status"
-      className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+      className="rounded-card border border-red-300 bg-red-50 p-4 text-red-700 shadow-chip"
     >
       <p className="text-base font-semibold">Invalid ticket</p>
       <p className="text-sm">
@@ -346,40 +357,53 @@ export function CheckInConsole({
       <ResultBanner status={status} eventId={eventId} />
 
       {/* B. Live attendance and the forecast comparison */}
-      <section className="flex flex-col gap-4 rounded-xl border border-border p-5">
+      <section className="flex flex-col gap-4 rounded-card bg-white p-5 shadow-card lg:p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-sm font-semibold tracking-tight uppercase">Live attendance</h2>
-          <p className="text-xs text-muted-foreground">
+          <h2 className="text-sm font-extrabold text-upay-navy">Live attendance</h2>
+          <p className="inline-flex items-center gap-1.5 text-[0.6875rem] font-bold text-upay-blue">
+            <span className="size-1.5 rounded-full bg-upay-yellow shadow-active" />
             {liveError ? liveError : "Refreshes every 10 seconds and after every scan."}
           </p>
         </div>
 
-        <div className="flex items-end gap-6">
+        <div className="flex flex-wrap items-end gap-6">
           <div>
-            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            <p className="text-[0.625rem] font-bold tracking-wide text-upay-navy/45 uppercase">
               Checked in
             </p>
-            <p className="text-4xl font-semibold tracking-tight tabular-nums">
+            <p className="text-5xl font-extrabold tracking-tight text-upay-navy tabular-nums">
               {formatCount(live.attendance.checkedInAttendees)}
             </p>
           </div>
 
-          <dl className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-            <div>
-              <dt className="text-xs text-muted-foreground">Tickets issued</dt>
-              <dd className="tabular-nums">{formatCount(live.attendance.ticketsIssued)}</dd>
+          <dl className="grid flex-1 grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+            <div className="rounded-2xl bg-upay-blue-soft/70 px-3 py-2">
+              <dt className="text-[0.625rem] font-semibold text-upay-navy/45 uppercase">Tickets issued</dt>
+              <dd className="font-extrabold text-upay-navy tabular-nums">
+                {formatCount(live.attendance.ticketsIssued)}
+              </dd>
             </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Paid registrations</dt>
-              <dd className="tabular-nums">{formatCount(live.registrations.paidRegistrations)}</dd>
+            <div className="rounded-2xl bg-upay-blue-soft/70 px-3 py-2">
+              <dt className="text-[0.625rem] font-semibold text-upay-navy/45 uppercase">
+                Paid registrations
+              </dt>
+              <dd className="font-extrabold text-upay-navy tabular-nums">
+                {formatCount(live.registrations.paidRegistrations)}
+              </dd>
             </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Duplicates blocked</dt>
-              <dd className="tabular-nums">{formatCount(live.attendance.duplicateScansRejected)}</dd>
+            <div className="rounded-2xl bg-upay-blue-soft/70 px-3 py-2">
+              <dt className="text-[0.625rem] font-semibold text-upay-navy/45 uppercase">
+                Duplicates blocked
+              </dt>
+              <dd className="font-extrabold text-upay-navy tabular-nums">
+                {formatCount(live.attendance.duplicateScansRejected)}
+              </dd>
             </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Attendance rate</dt>
-              <dd className="tabular-nums">
+            <div className="rounded-2xl bg-upay-blue-soft/70 px-3 py-2">
+              <dt className="text-[0.625rem] font-semibold text-upay-navy/45 uppercase">
+                Attendance rate
+              </dt>
+              <dd className="font-extrabold text-upay-navy tabular-nums">
                 {live.attendance.attendanceRate === null
                   ? "Not available"
                   : formatPercent(live.attendance.attendanceRate)}
@@ -389,7 +413,7 @@ export function CheckInConsole({
         </div>
 
         {live.attendance.lastCheckInAt ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs font-medium text-upay-navy/50">
             Last successful check-in {formatTimestamp(live.attendance.lastCheckInAt)}.
           </p>
         ) : null}
@@ -400,17 +424,15 @@ export function CheckInConsole({
       {/* C. Scan and manual entry */}
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold tracking-tight uppercase">Scan a QR code</h2>
+          <h2 className="text-sm font-extrabold text-upay-navy">Scan a QR code</h2>
           <QrScanner onDetect={handleDetect} disabled={isSubmitting} />
         </div>
 
-        <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold tracking-tight uppercase">
-            Or enter a ticket ID
-          </h2>
+        <div className="flex h-fit flex-col gap-3 rounded-card bg-white p-5 shadow-card">
+          <h2 className="text-sm font-extrabold text-upay-navy">Or enter a ticket ID</h2>
 
           <form onSubmit={handleManualSubmit} className="flex flex-col gap-3">
-            <label htmlFor="ticket-id" className="text-sm">
+            <label htmlFor="ticket-id" className="text-sm font-bold text-upay-navy">
               Ticket ID or reference
             </label>
             <input
@@ -423,19 +445,19 @@ export function CheckInConsole({
               autoCapitalize="characters"
               spellCheck={false}
               disabled={isSubmitting}
-              className="w-full rounded-md border border-border bg-background px-3 py-2.5 font-mono text-sm outline-none focus:border-brand disabled:opacity-60"
+              className="h-11 w-full rounded-button border border-upay-blue/12 bg-white px-3.5 font-mono text-sm text-upay-navy shadow-chip outline-none placeholder:text-upay-navy/30 focus-visible:border-upay-yellow focus-visible:ring-2 focus-visible:ring-upay-yellow/60 disabled:opacity-60"
             />
 
             <button
               type="submit"
               disabled={isSubmitting || ticketIdInput.trim().length === 0}
-              className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground hover:opacity-90 disabled:opacity-60"
+              className={buttonClass("primary", "lg", "w-full")}
             >
               {isSubmitting ? "Checking…" : "Check in ticket"}
             </button>
           </form>
 
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs font-medium text-upay-navy/50">
             Accepts the ticket ID from{" "}
             <span className="font-mono">/tickets/&lt;id&gt;</span>, or the short{" "}
             <span className="font-mono">UPE-XXXXXXXX</span> reference printed beside the QR code. The
@@ -443,7 +465,7 @@ export function CheckInConsole({
             access.
           </p>
 
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs font-medium text-upay-navy/50">
             Scans are checked against <span className="font-medium">{eventTitle}</span> and your own
             organization only. A ticket cannot be checked in twice, and every rejected scan is
             recorded.

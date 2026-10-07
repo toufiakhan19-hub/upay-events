@@ -3,6 +3,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
+import { buttonClass } from "@/components/ui/button-styles";
+import { CategoryTile } from "@/components/ui/category-tile";
+import { ArrowLeftIcon, ShieldIcon } from "@/components/ui/icons";
+import { Pill } from "@/components/ui/pill";
 import { formatEventDate, formatEventTime, ticketStatusLabel } from "@/lib/format";
 import { requireCurrentUser } from "@/server/auth/session";
 import { getTicketForUser, ticketReference } from "@/server/tickets/tickets";
@@ -37,75 +41,90 @@ export default async function TicketPage({ params }: TicketPageProps) {
 
   const qrDataUrl = await ticketQrDataUrl(ticket.qrToken);
 
-  return (
-    <div className="mx-auto flex w-full max-w-md flex-col gap-6">
-      <header className="flex flex-col gap-2">
-        <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Your ticket
-        </p>
-        <h1 className="text-2xl font-semibold tracking-tight">{ticket.eventTitle}</h1>
-      </header>
+  const rows = [
+    { label: "Attendee", value: ticket.attendeeName },
+    {
+      label: "Date and time",
+      value: (
+        <>
+          {formatEventDate(ticket.dateTime)} · {formatEventTime(ticket.dateTime)}{" "}
+          <span className="text-xs font-medium text-upay-navy/45">(UTC+06:00)</span>
+        </>
+      ),
+    },
+    { label: "Venue", value: ticket.venue },
+  ];
 
-      <section className="flex flex-col gap-5 rounded-xl border border-border p-6">
-        <div className="flex justify-center">
-          <Image
-            src={qrDataUrl}
-            alt={`QR code for ticket ${ticketReference(ticket.qrToken)}`}
-            width={240}
-            height={240}
-            unoptimized
-            className="h-auto w-60 rounded-md"
-          />
+  return (
+    <div className="mx-auto flex w-full max-w-md flex-col gap-5">
+      <Link
+        href="/tickets"
+        className="flex w-fit items-center gap-1 text-xs font-bold text-upay-blue hover:underline"
+      >
+        <ArrowLeftIcon className="size-4" />
+        My tickets
+      </Link>
+
+      <section className="event-card overflow-hidden rounded-card shadow-card">
+        <CategoryTile category={ticket.eventCategory} className="" iconClassName="size-14">
+          <div className="flex flex-col gap-2 p-5 pb-10 text-white">
+            <p className="text-[0.6875rem] font-bold tracking-[0.12em] text-white/80 uppercase">
+              Your ticket
+            </p>
+            <h1 className="max-w-[16rem] text-xl leading-tight font-extrabold tracking-tight drop-shadow">
+              {ticket.eventTitle}
+            </h1>
+          </div>
+        </CategoryTile>
+
+        <div className="relative -mt-5 flex justify-center px-5">
+          <div className="rounded-2xl bg-white p-3 shadow-card">
+            <Image
+              src={qrDataUrl}
+              alt={`QR code for ticket ${ticketReference(ticket.qrToken)}`}
+              width={240}
+              height={240}
+              unoptimized
+              className="h-auto w-56 rounded-md"
+            />
+          </div>
         </div>
 
-        <dl className="flex flex-col gap-3 text-sm">
-          <div className="flex flex-col gap-0.5">
-            <dt className="text-muted-foreground">Attendee</dt>
-            <dd>{ticket.attendeeName}</dd>
-          </div>
+        <div className="flex flex-col items-center gap-1 px-5 pt-4">
+          <p className="font-mono text-base font-bold tracking-wider text-upay-navy">
+            {ticketReference(ticket.qrToken)}
+          </p>
+          <Pill tone={ticket.status === "valid" ? "yellow" : "blue"}>
+            {ticketStatusLabel(ticket.status)}
+          </Pill>
+        </div>
 
-          <div className="flex flex-col gap-0.5">
-            <dt className="text-muted-foreground">Date and time</dt>
-            <dd>
-              {formatEventDate(ticket.dateTime)} · {formatEventTime(ticket.dateTime)}{" "}
-              <span className="text-xs text-muted-foreground">(UTC+06:00)</span>
-            </dd>
-          </div>
+        <div className="relative my-5 border-t border-dashed border-upay-blue/15">
+          <span className="absolute -top-3 -left-3 size-6 rounded-full bg-background" />
+          <span className="absolute -top-3 -right-3 size-6 rounded-full bg-background" />
+        </div>
 
-          <div className="flex flex-col gap-0.5">
-            <dt className="text-muted-foreground">Venue</dt>
-            <dd>{ticket.venue}</dd>
-          </div>
-
-          <div className="flex flex-col gap-0.5">
-            <dt className="text-muted-foreground">Ticket reference</dt>
-            <dd className="font-mono">{ticketReference(ticket.qrToken)}</dd>
-          </div>
-
-          <div className="flex flex-col gap-0.5">
-            <dt className="text-muted-foreground">Status</dt>
-            <dd>
-              <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
-                {ticketStatusLabel(ticket.status)}
-              </span>
-            </dd>
-          </div>
+        <dl className="flex flex-col gap-3 px-5 text-sm">
+          {rows.map(({ label, value }) => (
+            <div key={label} className="flex flex-col gap-0.5">
+              <dt className="text-[0.6875rem] font-semibold tracking-wide text-upay-navy/45 uppercase">
+                {label}
+              </dt>
+              <dd className="font-bold text-upay-navy">{value}</dd>
+            </div>
+          ))}
         </dl>
 
-        <p className="text-xs text-muted-foreground">
-          Show this code at the entrance. The QR carries only a random ticket token — no name,
-          phone number, or payment data. Each ticket can be checked in once.
+        <p className="m-5 flex gap-2.5 rounded-2xl bg-upay-blue-soft p-3 text-xs font-medium text-upay-navy/65">
+          <ShieldIcon className="size-4 shrink-0 text-upay-blue" />
+          Show this code at the entrance. The QR carries only a random ticket token — no name, phone
+          number, or payment data. Each ticket can be checked in once.
         </p>
       </section>
 
-      <div className="flex flex-wrap gap-4 text-xs">
-        <Link href="/tickets" className="underline">
-          My tickets
-        </Link>
-        <Link href={`/events/${ticket.eventSlug}`} className="underline">
-          Event details
-        </Link>
-      </div>
+      <Link href={`/events/${ticket.eventSlug}`} className={buttonClass("light", "md", "w-full")}>
+        Event details
+      </Link>
     </div>
   );
 }

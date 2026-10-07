@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 
+import { buttonClass } from "@/components/ui/button-styles";
+
 import { registerAction, type RegisterActionState } from "./actions";
 
 const INITIAL_STATE: RegisterActionState = { error: null };
@@ -31,13 +33,13 @@ export function RegisterButton({
       <button
         type="submit"
         disabled={disabled || pending}
-        className="w-full rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        className={buttonClass("primary", "lg", "w-full font-extrabold")}
       >
-        {pending ? "Registering…" : isFree ? "Register (free)" : "Register"}
+        {pending ? "Registering…" : isFree ? "Register (free)" : "Register with upay"}
       </button>
 
       {state.error ? (
-        <p role="alert" className="text-xs text-red-600 dark:text-red-400">
+        <p role="alert" className="text-xs font-medium text-red-600">
           {state.error}
         </p>
       ) : null}

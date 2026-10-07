@@ -4,6 +4,11 @@ import Link from "next/link";
 import { selectOrganizerAction } from "@/app/organizer/actions";
 import { MetricCard, MetricGrid } from "@/components/metric-card";
 import { OrganizerEventCard } from "@/components/organizer-event-card";
+import { buttonClass } from "@/components/ui/button-styles";
+import { Card } from "@/components/ui/card";
+import { HostIcon } from "@/components/ui/icons";
+import { SectionTitle } from "@/components/ui/page-header";
+import { Pill } from "@/components/ui/pill";
 import { formatCount } from "@/lib/format";
 import { getCurrentOrganizer } from "@/server/organizers/access";
 import { listDemoOrganizers, listOrganizerEvents } from "@/server/organizers/queries";
@@ -37,56 +42,69 @@ export default async function OrganizerDashboardPage({
     const organizers = await listDemoOrganizers();
 
     return (
-      <div className="flex flex-col gap-8">
-        <header className="flex flex-col gap-2">
-          <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            Organizer demo access
-          </p>
-          <h1 className="text-2xl font-semibold tracking-tight">Choose an organization</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            This is a hackathon demo shortcut, not an authentication system: pick an organization and
-            its dashboard opens. Real organizer onboarding and verification come later. Attendee
-            accounts keep working exactly as before — this does not touch attendee sessions.
-          </p>
-        </header>
+      <div className="flex flex-col gap-6">
+        <section className="hero-banner relative overflow-hidden rounded-hero p-6 text-white shadow-hero lg:p-9">
+          <div className="pointer-events-none absolute -top-8 -right-8 size-40 rounded-full border-[2.5rem] border-white/10" />
+          <div className="relative z-[1] max-w-2xl">
+            <p className="mb-2 text-[0.6875rem] font-bold tracking-[0.12em] text-white/75 uppercase">
+              Organizer demo access
+            </p>
+            <h1 className="text-[1.75rem] leading-tight font-extrabold tracking-tight lg:text-4xl">
+              Choose an organization
+            </h1>
+            <p className="mt-3 text-sm font-medium text-white/80">
+              This is a hackathon demo shortcut, not an authentication system: pick an organization
+              and its dashboard opens. Real organizer onboarding and verification come later.
+              Attendee accounts keep working exactly as before — this does not touch attendee
+              sessions.
+            </p>
+          </div>
+          <div className="hero-wave absolute inset-x-0 bottom-0 h-14" />
+        </section>
 
         {access === "unknown" ? (
-          <p className="rounded-xl border border-border bg-muted/40 p-4 text-sm">
+          <p className="rounded-card border border-upay-yellow/50 bg-upay-yellow-soft p-4 text-sm font-medium text-upay-navy">
             That organization is no longer in the database. Pick one of the organizations below.
           </p>
         ) : null}
 
         {organizers.length === 0 ? (
-          <section className="rounded-xl border border-dashed border-border p-10 text-center">
-            <h2 className="text-base font-semibold">No organizations in the database</h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
-              Run <code className="rounded bg-muted px-1 py-0.5 text-xs">npm run db:seed</code> to load
-              the demo organizers and events, then reload this page.
+          <Card as="section" className="p-10 text-center">
+            <h2 className="text-base font-extrabold text-upay-navy">No organizations in the database</h2>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-upay-navy/55">
+              Run <code className="rounded bg-upay-blue-soft px-1 py-0.5 text-xs">npm run db:seed</code>{" "}
+              to load the demo organizers and events, then reload this page.
             </p>
-          </section>
+          </Card>
         ) : (
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {organizers.map((item) => (
               <li
                 key={item.id}
-                className="flex flex-col justify-between gap-4 rounded-xl border border-border p-5"
+                className="event-card flex flex-col justify-between gap-5 rounded-card p-5 shadow-card"
               >
-                <div className="flex flex-col gap-1">
-                  <p className="text-base font-semibold tracking-tight">{item.organizationName}</p>
-                  <p className="text-xs text-muted-foreground">{item.contactName}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {item.eventCount === 0
-                      ? "No events yet"
-                      : `${formatCount(item.eventCount)} ${item.eventCount === 1 ? "event" : "events"}`}
-                  </p>
+                <div className="flex items-start gap-3">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-logo bg-upay-yellow text-upay-blue shadow-logo">
+                    <HostIcon className="size-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-base font-extrabold tracking-tight text-upay-navy">
+                      {item.organizationName}
+                    </p>
+                    <p className="text-xs font-medium text-upay-navy/50">{item.contactName}</p>
+                    <p className="mt-2">
+                      <Pill>
+                        {item.eventCount === 0
+                          ? "No events yet"
+                          : `${formatCount(item.eventCount)} ${item.eventCount === 1 ? "event" : "events"}`}
+                      </Pill>
+                    </p>
+                  </div>
                 </div>
 
                 <form action={selectOrganizerAction}>
                   <input type="hidden" name="organizerId" value={item.id} />
-                  <button
-                    type="submit"
-                    className="w-full rounded-md bg-brand px-3 py-2 text-sm font-semibold text-brand-foreground hover:opacity-90"
-                  >
+                  <button type="submit" className={buttonClass("primary", "md", "w-full")}>
                     Open dashboard
                   </button>
                 </form>
@@ -95,9 +113,9 @@ export default async function OrganizerDashboardPage({
           </ul>
         )}
 
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs font-medium text-upay-navy/50">
           Looking for the attendee experience?{" "}
-          <Link href="/events" className="underline">
+          <Link href="/events" className="font-bold text-upay-blue hover:underline">
             Browse events
           </Link>
         </p>
@@ -117,47 +135,53 @@ export default async function OrganizerDashboardPage({
   );
 
   return (
-    <div className="flex flex-col gap-8">
-      <header className="flex flex-col gap-2">
-        <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Organizer dashboard
-        </p>
-        <h1 className="text-2xl font-semibold tracking-tight">{organizer.organizationName}</h1>
-        <p className="text-sm text-muted-foreground">
-          {organizer.contactName} · {events.length}{" "}
-          {events.length === 1 ? "event" : "events"} · times shown in Bangladesh Standard Time
-          (UTC+06:00)
-        </p>
-      </header>
+    <div className="flex flex-col gap-6">
+      <section className="hero-banner relative overflow-hidden rounded-hero p-6 text-white shadow-hero lg:p-8">
+        <div className="pointer-events-none absolute -top-8 -right-8 size-40 rounded-full border-[2.5rem] border-white/10" />
+        <div className="relative z-[1]">
+          <p className="mb-2 text-[0.6875rem] font-bold tracking-[0.12em] text-white/75 uppercase">
+            Organizer dashboard
+          </p>
+          <h1 className="text-[1.75rem] leading-tight font-extrabold tracking-tight lg:text-4xl">
+            {organizer.organizationName}
+          </h1>
+          <p className="mt-2 text-sm font-medium text-white/80">
+            {organizer.contactName} · {events.length} {events.length === 1 ? "event" : "events"} ·
+            times shown in Bangladesh Standard Time (UTC+06:00)
+          </p>
+        </div>
+        <div className="hero-wave absolute inset-x-0 bottom-0 h-14" />
+      </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold tracking-tight uppercase">Across all your events</h2>
+      <section>
+        <SectionTitle>Across all your events</SectionTitle>
         <MetricGrid>
           <MetricCard label="Events" value={formatCount(events.length)} />
-          <MetricCard label="Registrations" value={formatCount(totals.registrations)} />
+          <MetricCard label="Registrations" value={formatCount(totals.registrations)} tone="blue" />
           <MetricCard label="Paid registrations" value={formatCount(totals.paid)} />
           <MetricCard
             label="Checked in"
             value={formatCount(totals.checkedIn)}
             hint="Counted from ticket scans"
             muted={totals.checkedIn === 0}
+            tone="blue"
           />
         </MetricGrid>
       </section>
 
-      <section className="flex flex-col gap-4">
-        <h2 className="text-sm font-semibold tracking-tight uppercase">Your events</h2>
+      <section>
+        <SectionTitle>Your events</SectionTitle>
 
         {events.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border p-10 text-center">
-            <h3 className="text-base font-semibold">No events yet</h3>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+          <Card className="p-10 text-center">
+            <h3 className="text-base font-extrabold text-upay-navy">No events yet</h3>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-upay-navy/55">
               This organization has no events in the database, so there is nothing to report yet.
               Attendance and forecast panels fill in automatically once an event exists.
             </p>
-          </div>
+          </Card>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
             {events.map((event) => (
               <OrganizerEventCard key={event.id} event={event} />
             ))}
@@ -165,12 +189,12 @@ export default async function OrganizerDashboardPage({
         )}
       </section>
 
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs font-medium text-upay-navy/45">
         Every number on this page comes from the database: registrations from{" "}
-        <code className="rounded bg-muted px-1 py-0.5">registrations</code>, attendance from{" "}
-        <code className="rounded bg-muted px-1 py-0.5">check_ins</code>. Nothing is estimated. The
-        AI prediction and recommendation panels live on each event page and stay empty until a
-        forecast is generated there.
+        <code className="rounded bg-upay-blue-soft px-1 py-0.5">registrations</code>, attendance from{" "}
+        <code className="rounded bg-upay-blue-soft px-1 py-0.5">check_ins</code>. Nothing is
+        estimated. The AI prediction and recommendation panels live on each event page and stay
+        empty until a forecast is generated there.
       </p>
     </div>
   );

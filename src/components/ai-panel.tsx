@@ -1,3 +1,5 @@
+import { SparkleIcon } from "@/components/ui/icons";
+
 /**
  * Shell for a panel whose numbers come from the AI service.
  *
@@ -17,20 +19,37 @@ type AiPanelProps = {
   children?: React.ReactNode;
   /** Shown when there is no persisted record. */
   emptyMessage: string;
+  className?: string;
 };
 
-export function AiPanel({ title, description, badge, children, emptyMessage }: AiPanelProps) {
+export function AiPanel({
+  title,
+  description,
+  badge,
+  children,
+  emptyMessage,
+  className = "bg-white",
+}: AiPanelProps) {
   const hasContent = Boolean(children);
 
   return (
-    <section className="flex flex-col gap-4 rounded-xl border border-dashed border-border p-5">
-      <header className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-          <p className="text-xs text-muted-foreground">{description}</p>
+    <section className={`flex flex-col gap-4 rounded-card p-5 shadow-card lg:p-6 ${className}`}>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-upay-blue-soft text-upay-blue">
+            <SparkleIcon className="size-4" />
+          </span>
+          <div className="flex flex-col gap-0.5">
+            <h2 className="text-sm font-extrabold text-upay-navy">{title}</h2>
+            <p className="text-[0.6875rem] font-medium text-upay-navy/50">{description}</p>
+          </div>
         </div>
 
-        <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium whitespace-nowrap text-muted-foreground">
+        <span
+          className={`rounded-full px-2.5 py-1 text-[0.6875rem] font-bold whitespace-nowrap ${
+            hasContent ? "bg-upay-yellow text-upay-navy shadow-active" : "bg-upay-blue-soft text-upay-navy/60"
+          }`}
+        >
           {badge ?? (hasContent ? "Cached forecast" : "Not available yet")}
         </span>
       </header>
@@ -38,7 +57,7 @@ export function AiPanel({ title, description, badge, children, emptyMessage }: A
       {hasContent ? (
         children
       ) : (
-        <p className="rounded-lg border border-dashed border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+        <p className="rounded-2xl bg-upay-blue-soft/70 p-4 text-sm font-medium text-upay-navy/60">
           {emptyMessage}
         </p>
       )}
@@ -46,15 +65,21 @@ export function AiPanel({ title, description, badge, children, emptyMessage }: A
   );
 }
 
-/** Bulleted list of model signals, as returned by the AI service. */
+/** Model signals as returned by the AI service, styled as factor chips. */
 export function ReasonList({ reasons }: { reasons: string[] }) {
   return (
-    <ul className="flex flex-col gap-1.5 text-sm">
-      {reasons.map((reason) => (
-        <li key={reason} className="flex gap-2">
-          <span aria-hidden className="text-muted-foreground">
-            &middot;
-          </span>
+    <ul className="grid gap-2 sm:grid-cols-2">
+      {reasons.map((reason, index) => (
+        <li
+          key={reason}
+          className="flex items-start gap-2.5 rounded-xl bg-white px-3 py-2.5 text-sm font-medium text-upay-navy shadow-chip"
+        >
+          <span
+            aria-hidden
+            className={`mt-1.5 size-2 shrink-0 rounded-full ${
+              index % 2 === 0 ? "bg-upay-yellow" : "bg-upay-blue"
+            }`}
+          />
           <span>{reason}</span>
         </li>
       ))}

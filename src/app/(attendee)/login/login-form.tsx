@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 
+import { buttonClass } from "@/components/ui/button-styles";
+
 import { loginAction, type LoginFormState } from "./actions";
 
 const INITIAL_STATE: LoginFormState = { errors: {} };
@@ -19,7 +21,7 @@ export function LoginForm({ next }: { next?: string }) {
       <input type="hidden" name="next" value={next ?? ""} />
 
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="name" className="text-sm font-medium">
+        <label htmlFor="name" className="text-sm font-bold text-upay-navy">
           Full name
         </label>
         <input
@@ -31,18 +33,18 @@ export function LoginForm({ next }: { next?: string }) {
           required
           aria-invalid={state.errors.name ? true : undefined}
           aria-describedby={state.errors.name ? "name-error" : undefined}
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          className="h-11 rounded-button border border-upay-blue/12 bg-white px-3.5 text-sm text-upay-navy shadow-chip outline-none placeholder:text-upay-navy/35 focus-visible:border-upay-yellow focus-visible:ring-2 focus-visible:ring-upay-yellow/60"
           placeholder="e.g. Nusrat Jahan"
         />
         {state.errors.name ? (
-          <p id="name-error" role="alert" className="text-sm text-red-600 dark:text-red-400">
+          <p id="name-error" role="alert" className="text-sm font-medium text-red-600">
             {state.errors.name}
           </p>
         ) : null}
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="phone" className="text-sm font-medium">
+        <label htmlFor="phone" className="text-sm font-bold text-upay-navy">
           Phone number
         </label>
         <input
@@ -54,15 +56,15 @@ export function LoginForm({ next }: { next?: string }) {
           required
           aria-invalid={state.errors.phone ? true : undefined}
           aria-describedby={state.errors.phone ? "phone-error" : "phone-hint"}
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          className="h-11 rounded-button border border-upay-blue/12 bg-white px-3.5 text-sm text-upay-navy shadow-chip outline-none placeholder:text-upay-navy/35 focus-visible:border-upay-yellow focus-visible:ring-2 focus-visible:ring-upay-yellow/60"
           placeholder="01712345678"
         />
         {state.errors.phone ? (
-          <p id="phone-error" role="alert" className="text-sm text-red-600 dark:text-red-400">
+          <p id="phone-error" role="alert" className="text-sm font-medium text-red-600">
             {state.errors.phone}
           </p>
         ) : (
-          <p id="phone-hint" className="text-xs text-muted-foreground">
+          <p id="phone-hint" className="text-xs font-medium text-upay-navy/50">
             Bangladeshi mobile number. Used only to identify your account in this demo.
           </p>
         )}
@@ -71,7 +73,7 @@ export function LoginForm({ next }: { next?: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="mt-1 rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground hover:opacity-90 disabled:opacity-60"
+        className={buttonClass("primary", "lg", "mt-1 w-full")}
       >
         {pending ? "Continuing…" : "Continue with upay"}
       </button>

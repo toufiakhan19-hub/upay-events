@@ -1,28 +1,9 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
-:root {
-  --background: #fffdf4;
-  --foreground: #071f4d;
-  --muted: #eef3ff;
-  --muted-foreground: #4a5a7a;
-  --border: #dde4f2;
-  --brand: #ffd200;
-  --brand-foreground: #071f4d;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-border: var(--border);
-  --color-brand: var(--brand);
-  --color-brand-foreground: var(--brand-foreground);
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-geist-mono);
-}
-
 @theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
   --color-upay-yellow: #ffd200;
   --color-upay-yellow-deep: #eeb900;
   --color-upay-yellow-soft: #fff8cc;
@@ -32,26 +13,47 @@
 
   --radius-card: 1.25rem;
   --radius-button: 0.875rem;
+  --radius-image: 1rem;
   --radius-hero: 1.5rem;
   --radius-logo: 0.625rem;
 
   --shadow-card: 0 0.75rem 2.25rem rgba(0, 51, 160, 0.09);
   --shadow-button: 0 0.375rem 1rem rgba(255, 210, 0, 0.28);
+  --shadow-avatar: 0 0.5rem 1.25rem rgba(0, 51, 160, 0.2);
   --shadow-nav: 0 -0.5rem 2rem rgba(0, 31, 94, 0.06);
   --shadow-hero: 0 1rem 2.5rem rgba(0, 51, 160, 0.18);
+  --shadow-search: 0 0.375rem 1.25rem rgba(0, 51, 160, 0.06);
   --shadow-chip: 0 0.25rem 0.875rem rgba(0, 51, 160, 0.06);
   --shadow-logo: 0 0.375rem 0.875rem rgba(255, 210, 0, 0.28);
+  --shadow-pill: 0 0.25rem 0.75rem rgba(255, 210, 0, 0.22);
   --shadow-active: 0 0.25rem 0.875rem rgba(255, 210, 0, 0.3);
+
+  --tracking-brand: 0.12em;
+  --breakpoint-mobile: 26.25rem;
+}
+
+@utility max-w-mobile {
+  max-width: 26.25rem;
 }
 
 @utility pb-safe {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
 
+* {
+  box-sizing: border-box;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  margin: 0;
+  min-width: 20rem;
+  min-height: 100vh;
+  background: #f4f6fa;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
 }
 
 .app-background {
@@ -66,7 +68,6 @@ body {
     100% 100%,
     100% 100%,
     100% 100%;
-  background-attachment: fixed;
 }
 
 .hero-banner {
@@ -78,6 +79,14 @@ body {
 .hero-wave {
   background: rgba(255, 255, 255, 0.12);
   clip-path: ellipse(72% 55% at 55% 100%);
+}
+
+.bg-event-placeholder {
+  background: linear-gradient(135deg, #eef3ff, #fff8cc);
+}
+
+.bg-image-overlay {
+  background: linear-gradient(180deg, rgba(7, 31, 77, 0.16), transparent 50%, rgba(7, 31, 77, 0.2));
 }
 
 .event-card {
@@ -93,6 +102,13 @@ body {
 
 .scrollbar-none::-webkit-scrollbar {
   display: none;
+}
+
+.dashboard-background {
+  background:
+    radial-gradient(circle at 12% 14%, rgba(255, 210, 0, 0.15), transparent 24%),
+    radial-gradient(circle at 92% 33%, rgba(0, 51, 160, 0.1), transparent 26%),
+    linear-gradient(180deg, rgba(255, 253, 244, 0.96), rgba(247, 250, 255, 0.98));
 }
 
 .forecast-glow::before {
@@ -114,12 +130,7 @@ body {
 .sponsor-banner {
   background:
     radial-gradient(circle at 92% 10%, color-mix(in srgb, white 58%, transparent), transparent 30%),
-    linear-gradient(
-      120deg,
-      var(--color-upay-yellow-soft),
-      color-mix(in srgb, white 68%, var(--color-upay-blue-soft)),
-      var(--color-upay-blue-soft)
-    );
+    linear-gradient(120deg, var(--color-upay-yellow-soft), color-mix(in srgb, white 68%, var(--color-upay-blue-soft)), var(--color-upay-blue-soft));
 }
 
 .confidence-card {
