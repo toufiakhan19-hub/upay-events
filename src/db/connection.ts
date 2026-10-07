@@ -1,10 +1,7 @@
-import { mkdirSync } from "node:fs";
-import { dirname } from "node:path";
-
-import Database from "better-sqlite3";
+import postgres from "postgres";
 
 /**
- * better-sqlite3 connection factory shared by the Next.js runtime
+ * Postgres (Supabase) connection factory shared by the Next.js runtime
  * (`src/db/client.ts`) and the standalone seed script (`scripts/seed.ts`).
  *
  * Deliberately not marked `server-only`: the `server-only` package throws when
@@ -14,14 +11,23 @@ import Database from "better-sqlite3";
  * browser.
  */
 
-export function openSqliteConnection(databasePath: string): Database.Database {
-  mkdirSync(dirname(databasePath), { recursive: true });
+function isLocalHost(databaseUrl: string): boolean {
+  try {
+    const { hostname } = new URL(databaseUrl);
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  } catch {
+    return false;
+  }
+}
 
-  const sqlite = new Database(databasePath);
-
-  // Required for the cascade deletes declared in the schema to actually fire.
-  sqlite.pragma("foreign_keys = ON");
-  sqlite.pragma("journal_mode = WAL");
-
-  return sqlite;
+export function openPostgresConnection(databaseUrl: string, options: { max?: number } = {}) {
+  return postgres(databaseUrl, {
+    max: options.max ?? 10,
+    // Supabase's transaction pooler (port 6543) does not support prepared
+    // statements. Disabling them keeps both the session and transaction pooler
+    // connection strings working.
+    prepare: false,
+    // Supabase requires TLS; a local Postgres usually has none.
+    ssl: isLocalHost(databaseUrl) ? false : "require",
+  });
 }

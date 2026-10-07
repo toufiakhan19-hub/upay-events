@@ -1,13 +1,15 @@
 import { sql } from "drizzle-orm";
 import { relations } from "drizzle-orm";
 import {
+  boolean,
+  doublePrecision,
   index,
   integer,
-  real,
-  sqliteTable,
+  jsonb,
+  pgTable,
   text,
   uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 
 import {
   CHECK_IN_RESULTS,
@@ -24,14 +26,17 @@ import {
 } from "./enums";
 
 /**
- * Storage conventions (SQLite has no native types for these):
+ * Storage conventions (Postgres on Supabase):
  *
- * - Primary keys are ULID strings (`text`), not auto-increment integers.
- *   Portable to Postgres later and not enumerable by an attacker.
- * - Timestamps are ISO 8601 UTC strings with second precision, `Z` suffix.
+ * - Primary keys are ULID strings (`text`), not auto-increment integers, so
+ *   they are not enumerable by an attacker.
+ * - Timestamps are ISO 8601 UTC strings with second precision, `Z` suffix,
+ *   stored as `text` so ordering and comparison stay plain string operations.
  * - Money is an integer count of Bangladeshi Taka. Never a float.
- * - Booleans use `integer` with `mode: "boolean"`.
- * - Structured values are JSON text via `mode: "json"`.
+ * - Structured values are `jsonb`.
+ * - Row-level security is enabled on every table with no policies. The app
+ *   connects as the database owner, which bypasses RLS; Supabase's public Data
+ *   API (anon / authenticated roles) therefore cannot read or write any row.
  *
  * This file is server-only data. It is never sent to the AI service — the app
  * maps rows into the request shapes defined in `docs/API_CONTRACT.md` §4.3.1
@@ -42,7 +47,7 @@ import {
 const createdAt = () =>
   text("created_at")
     .notNull()
-    .default(sql`(strftime('%Y-%m-%dT%H:%M:%SZ','now'))`);
+    .default(sql`to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`);
 
 /** Shape of `event_forecasts.recommendation`, mirroring API_CONTRACT.md §4.4.1. */
 export type StoredRecommendation = {
@@ -59,16 +64,13 @@ export type StoredRecommendation = {
 /* -------------------------------------------------------------------------- */
 
 /** PRD §12. Deliberately minimal: name, phone, optional interests (PRD §7). */
-export const users = sqliteTable(
+export const users = pgTable(
   "users",
   {
     id: text("id").primaryKey(),
     name: text("name").notNull(),
     phone: text("phone").notNull(),
-    interests: text("interests", { mode: "json" })
-      .$type<string[]>()
-      .notNull()
-      .default(sql`'[]'`),
+    interests: jsonb("interests").$type<string[]>().notNull().default([]),
     /**
      * Opaque reference to the mock upay account. Never a real wallet, balance,
      * or transaction identifier (PRD §14). Not exposed to the AI service.
@@ -77,10 +79,10 @@ export const users = sqliteTable(
     createdAt: createdAt(),
   },
   (table) => [uniqueIndex("users_phone_unique").on(table.phone)],
-);
+).enableRLS();
 
 /** PRD §12. Session storage for the mock "Continue with upay" login. */
-export const sessions = sqliteTable(
+export const sessions = pgTable(
   "sessions",
   {
     id: text("id").primaryKey(),
@@ -91,19 +93,19 @@ export const sessions = sqliteTable(
     createdAt: createdAt(),
   },
   (table) => [index("sessions_user_idx").on(table.userId)],
-);
+).enableRLS();
 
 /** PRD §12. */
-export const organizers = sqliteTable("organizers", {
+export const organizers = pgTable("organizers", {
   id: text("id").primaryKey(),
   organizationName: text("organization_name").notNull(),
   contactName: text("contact_name").notNull(),
   contactPhone: text("contact_phone").notNull(),
   createdAt: createdAt(),
-});
+}).enableRLS();
 
 /** PRD §12. `locationType` is an AI feature (API_CONTRACT.md §4.3.1). */
-export const events = sqliteTable(
+export const events = pgTable(
   "events",
   {
     id: text("id").primaryKey(),
@@ -126,14 +128,14 @@ export const events = sqliteTable(
     uniqueIndex("events_slug_unique").on(table.slug),
     index("events_organizer_idx").on(table.organizerId),
   ],
-);
+).enableRLS();
 
 /* -------------------------------------------------------------------------- */
 /* Registration and payment                                                   */
 /* -------------------------------------------------------------------------- */
 
 /** PRD §12. */
-export const registrations = sqliteTable(
+export const registrations = pgTable(
   "registrations",
   {
     id: text("id").primaryKey(),
@@ -154,13 +156,13 @@ export const registrations = sqliteTable(
     uniqueIndex("registrations_user_event_unique").on(table.userId, table.eventId),
     index("registrations_event_status_idx").on(table.eventId, table.status),
   ],
-);
+).enableRLS();
 
 /**
  * PRD §12. A ticket is issued only when a payment reaches `success` (PRD §7),
  * which the unique index on `registrationId` helps enforce.
  */
-export const payments = sqliteTable(
+export const payments = pgTable(
   "payments",
   {
     id: text("id").primaryKey(),
@@ -178,7 +180,7 @@ export const payments = sqliteTable(
     uniqueIndex("payments_registration_unique").on(table.registrationId),
     uniqueIndex("payments_mock_transaction_unique").on(table.mockTransactionId),
   ],
-);
+).enableRLS();
 
 /* -------------------------------------------------------------------------- */
 /* Tickets and check-in                                                       */
@@ -189,7 +191,7 @@ export const payments = sqliteTable(
  * an opaque random value, optionally HMAC-signed when the ticket service is
  * implemented.
  */
-export const tickets = sqliteTable(
+export const tickets = pgTable(
   "tickets",
   {
     id: text("id").primaryKey(),
@@ -205,10 +207,10 @@ export const tickets = sqliteTable(
     uniqueIndex("tickets_registration_unique").on(table.registrationId),
     uniqueIndex("tickets_qr_token_unique").on(table.qrToken),
   ],
-);
+).enableRLS();
 
 /** PRD §14: every ticket scan is logged, including rejected duplicate scans. */
-export const checkIns = sqliteTable(
+export const checkIns = pgTable(
   "check_ins",
   {
     id: text("id").primaryKey(),
@@ -220,7 +222,7 @@ export const checkIns = sqliteTable(
     scannedAt: createdAt(),
   },
   (table) => [index("check_ins_ticket_idx").on(table.ticketId)],
-);
+).enableRLS();
 
 /* -------------------------------------------------------------------------- */
 /* Reminders                                                                  */
@@ -230,7 +232,7 @@ export const checkIns = sqliteTable(
  * PRD §12. The most advanced reminder state reached becomes the
  * `reminder_status` AI feature (API_CONTRACT.md §4.3.1).
  */
-export const reminders = sqliteTable(
+export const reminders = pgTable(
   "reminders",
   {
     id: text("id").primaryKey(),
@@ -242,7 +244,7 @@ export const reminders = sqliteTable(
     confirmedAt: text("confirmed_at"),
   },
   (table) => [index("reminders_registration_idx").on(table.registrationId)],
-);
+).enableRLS();
 
 /* -------------------------------------------------------------------------- */
 /* AI output, persisted by the app                                            */
@@ -253,31 +255,28 @@ export const reminders = sqliteTable(
  * The dashboard reads this table and never calls the AI service during a render
  * (API_CONTRACT.md §7.1).
  */
-export const predictions = sqliteTable(
+export const predictions = pgTable(
   "predictions",
   {
     id: text("id").primaryKey(),
     registrationId: text("registration_id")
       .notNull()
       .references(() => registrations.id, { onDelete: "cascade" }),
-    attendanceProbability: real("attendance_probability").notNull(),
+    attendanceProbability: doublePrecision("attendance_probability").notNull(),
     noShowRisk: text("no_show_risk", { enum: NO_SHOW_RISKS }).notNull(),
-    topReasons: text("top_reasons", { mode: "json" })
-      .$type<string[]>()
-      .notNull()
-      .default(sql`'[]'`),
+    topReasons: jsonb("top_reasons").$type<string[]>().notNull().default([]),
     modelVersion: text("model_version").notNull(),
     createdAt: createdAt(),
   },
   (table) => [index("predictions_registration_idx").on(table.registrationId)],
-);
+).enableRLS();
 
 /**
  * PRD §12. Cached output of `POST /predict/forecast`. `isStale` is
  * application-owned state: the AI service never returns it
  * (API_CONTRACT.md §7.3).
  */
-export const eventForecasts = sqliteTable(
+export const eventForecasts = pgTable(
   "event_forecasts",
   {
     id: text("id").primaryKey(),
@@ -285,31 +284,26 @@ export const eventForecasts = sqliteTable(
       .notNull()
       .references(() => events.id, { onDelete: "cascade" }),
     paidRegistrations: integer("paid_registrations").notNull(),
-    predictedAttendance: real("predicted_attendance").notNull(),
+    predictedAttendance: doublePrecision("predicted_attendance").notNull(),
     predictedNoShows: integer("predicted_no_shows").notNull(),
-    noShowRate: real("no_show_rate").notNull(),
+    noShowRate: doublePrecision("no_show_rate").notNull(),
     recommendedWaitlist: integer("recommended_waitlist").notNull(),
-    confidence: real("confidence").notNull(),
+    confidence: doublePrecision("confidence").notNull(),
     confidenceLabel: text("confidence_label", { enum: CONFIDENCE_LABELS }).notNull(),
-    topReasons: text("top_reasons", { mode: "json" })
-      .$type<string[]>()
-      .notNull()
-      .default(sql`'[]'`),
-    recommendation: text("recommendation", { mode: "json" })
-      .$type<StoredRecommendation>()
-      .notNull(),
+    topReasons: jsonb("top_reasons").$type<string[]>().notNull().default([]),
+    recommendation: jsonb("recommendation").$type<StoredRecommendation>().notNull(),
     modelVersion: text("model_version").notNull(),
-    isStale: integer("is_stale", { mode: "boolean" }).notNull().default(false),
+    isStale: boolean("is_stale").notNull().default(false),
     createdAt: createdAt(),
   },
   (table) => [index("event_forecasts_event_idx").on(table.eventId, table.createdAt)],
-);
+).enableRLS();
 
 /**
  * Organizer decisions taken from a recommendation. Recorded so the
  * recommended-action acceptance rate (PRD §13) can be reported later.
  */
-export const organizerActions = sqliteTable(
+export const organizerActions = pgTable(
   "organizer_actions",
   {
     id: text("id").primaryKey(),
@@ -317,14 +311,11 @@ export const organizerActions = sqliteTable(
       .notNull()
       .references(() => events.id, { onDelete: "cascade" }),
     actionType: text("action_type", { enum: ORGANIZER_ACTION_TYPES }).notNull(),
-    payload: text("payload", { mode: "json" })
-      .$type<Record<string, unknown>>()
-      .notNull()
-      .default(sql`'{}'`),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
     createdAt: createdAt(),
   },
   (table) => [index("organizer_actions_event_idx").on(table.eventId)],
-);
+).enableRLS();
 
 /* -------------------------------------------------------------------------- */
 /* Relations (Drizzle relational query API)                                   */

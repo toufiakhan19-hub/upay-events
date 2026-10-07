@@ -1,7 +1,5 @@
 import "server-only";
 
-import { eq } from "drizzle-orm";
-
 import { db } from "@/db/client";
 import { eventForecasts } from "@/db/schema";
 import { newId } from "@/lib/ids";
@@ -125,7 +123,8 @@ export async function refreshEventForecast(
   // and no row is ever updated or deleted. `getOrganizerEventDashboard` already reads
   // the newest row per event, so a refresh is visible immediately and the previous
   // forecast stays available for comparison.
-  db.insert(eventForecasts)
+  const [stored] = await db
+    .insert(eventForecasts)
     .values({
       id,
       eventId: source.event.id,
@@ -145,12 +144,9 @@ export async function refreshEventForecast(
       // (§7.3) and only becomes true through age or an explicit flag.
       isStale: false,
     })
-    .run();
-
-  // Read the row back through the same mapper the dashboard uses, so the response to
-  // this refresh and the next page load cannot disagree about what was stored.
-  // `better-sqlite3` is synchronous, hence `.all()` rather than `await`.
-  const [stored] = db.select().from(eventForecasts).where(eq(eventForecasts.id, id)).limit(1).all();
+    // Map the stored row through the same mapper the dashboard uses, so the response
+    // to this refresh and the next page load cannot disagree about what was stored.
+    .returning();
 
   if (!stored) {
     return {

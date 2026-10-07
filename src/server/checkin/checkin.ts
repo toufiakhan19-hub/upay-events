@@ -80,7 +80,7 @@ const OPAQUE_TOKEN_PATTERN = /^[A-Za-z0-9_-]{16,128}$/;
 /** The eight-token-character reference printed on a ticket, e.g. `UPE-A1B2C3D4`. */
 const TICKET_REFERENCE_PATTERN = /^UPE-([A-Za-z0-9]{8})$/;
 
-/** Ticket ids are ULIDs; this only rejects absurd input before hitting SQLite. */
+/** Ticket ids are ULIDs; this only rejects absurd input before hitting the database. */
 const MAX_TICKET_ID_LENGTH = 64;
 
 /**
@@ -191,12 +191,12 @@ function credentialCondition(credential: TicketCredential) {
  * this organizer's events matches nothing, and the caller cannot tell that
  * apart from an id that never existed.
  */
-function findTicketInTransaction(
+async function findTicketInTransaction(
   tx: DatabaseTransaction,
   organizerId: string,
   credential: TicketCredential,
-): ScannedTicket | null {
-  const [row] = tx
+): Promise<ScannedTicket | null> {
+  const [row] = await tx
     .select({
       id: tickets.id,
       qrToken: tickets.qrToken,
@@ -211,8 +211,7 @@ function findTicketInTransaction(
     .innerJoin(registrations, eq(tickets.registrationId, registrations.id))
     .innerJoin(events, eq(registrations.eventId, events.id))
     .where(and(credentialCondition(credential), eq(events.organizerId, organizerId)))
-    .limit(1)
-    .all();
+    .limit(1);
 
   return row ?? null;
 }
@@ -223,19 +222,17 @@ function findTicketInTransaction(
  * `invalid_ticket` without leaving a row — the honest consequence of the existing
  * schema, and no fake sentinel ticket is created to work around it.
  */
-function recordScanInTransaction(
+async function recordScanInTransaction(
   tx: DatabaseTransaction,
   input: { ticketId: string; scannedBy: string | null; result: CheckInResult; scannedAt: string },
-): void {
-  tx.insert(checkIns)
-    .values({
-      id: newId(),
-      ticketId: input.ticketId,
-      scannedBy: input.scannedBy,
-      result: input.result,
-      scannedAt: input.scannedAt,
-    })
-    .run();
+): Promise<void> {
+  await tx.insert(checkIns).values({
+    id: newId(),
+    ticketId: input.ticketId,
+    scannedBy: input.scannedBy,
+    result: input.result,
+    scannedAt: input.scannedAt,
+  });
 }
 
 /**
@@ -301,80 +298,78 @@ export async function scanTicket(input: {
 }): Promise<CheckInScanOutcome> {
   const scannedAt = toUtcTimestamp(new Date());
 
-  return db.transaction(
-    (tx) => {
-      const ticket = findTicketInTransaction(tx, input.organizerId, input.credential);
+  return db.transaction(async (tx) => {
+    const ticket = await findTicketInTransaction(tx, input.organizerId, input.credential);
 
-      if (!ticket) {
-        return outcome({ result: "invalid_ticket", scannedAt, checkedInAt: null });
-      }
+    if (!ticket) {
+      return outcome({ result: "invalid_ticket", scannedAt, checkedInAt: null });
+    }
 
-      const identity = {
-        ticketId: ticket.id,
-        ticketReference: ticketReference(ticket.qrToken),
-        eventId: ticket.eventId,
-        eventTitle: ticket.eventTitle,
-      };
+    const identity = {
+      ticketId: ticket.id,
+      ticketReference: ticketReference(ticket.qrToken),
+      eventId: ticket.eventId,
+      eventTitle: ticket.eventTitle,
+    };
 
-      const rejected = rejectionReason(ticket);
+    const rejected = rejectionReason(ticket);
 
-      if (rejected) {
-        recordScanInTransaction(tx, {
-          ticketId: ticket.id,
-          scannedBy: input.scannedBy,
-          result: rejected,
-          scannedAt,
-        });
-
-        return outcome({ result: rejected, scannedAt, checkedInAt: null, ...identity });
-      }
-
-      // The atomic claim. `status = 'valid'` in the predicate is what makes a
-      // ticket usable exactly once, even if two phones scan it at the same
-      // moment: the update can only affect one row, and only one caller sees
-      // `changes === 1`.
-      const claimed = tx
-        .update(tickets)
-        .set({ status: "checked_in", checkedInAt: scannedAt })
-        .where(and(eq(tickets.id, ticket.id), eq(tickets.status, "valid")))
-        .run();
-
-      if (claimed.changes === 1) {
-        recordScanInTransaction(tx, {
-          ticketId: ticket.id,
-          scannedBy: input.scannedBy,
-          result: "checked_in",
-          scannedAt,
-        });
-
-        return outcome({ result: "checked_in", scannedAt, checkedInAt: scannedAt, ...identity });
-      }
-
-      // Lost the race, or the ticket was already used when it was read. Re-read
-      // inside the same transaction so the duplicate is attributed to whichever
-      // state actually won, and still log the rejected attempt.
-      const [current] = tx
-        .select({ status: tickets.status, checkedInAt: tickets.checkedInAt })
-        .from(tickets)
-        .where(eq(tickets.id, ticket.id))
-        .all();
-
-      const result: CheckInResult = current?.status === "checked_in" ? "already_used" : "invalid_ticket";
-
-      recordScanInTransaction(tx, {
+    if (rejected) {
+      await recordScanInTransaction(tx, {
         ticketId: ticket.id,
         scannedBy: input.scannedBy,
-        result,
+        result: rejected,
         scannedAt,
       });
 
-      return outcome({
-        result,
+      return outcome({ result: rejected, scannedAt, checkedInAt: null, ...identity });
+    }
+
+    // The atomic claim. `status = 'valid'` in the predicate is what makes a
+    // ticket usable exactly once, even if two phones scan it at the same
+    // moment: Postgres row-locks the ticket for the update, the second scanner
+    // re-evaluates the predicate after the first commits, and only one caller
+    // gets a row back.
+    const claimed = await tx
+      .update(tickets)
+      .set({ status: "checked_in", checkedInAt: scannedAt })
+      .where(and(eq(tickets.id, ticket.id), eq(tickets.status, "valid")))
+      .returning({ id: tickets.id });
+
+    if (claimed.length === 1) {
+      await recordScanInTransaction(tx, {
+        ticketId: ticket.id,
+        scannedBy: input.scannedBy,
+        result: "checked_in",
         scannedAt,
-        checkedInAt: current?.checkedInAt ?? null,
-        ...identity,
       });
-    },
-    { behavior: "immediate" },
-  );
+
+      return outcome({ result: "checked_in", scannedAt, checkedInAt: scannedAt, ...identity });
+    }
+
+    // Lost the race, or the ticket was already used when it was read. Re-read
+    // inside the same transaction so the duplicate is attributed to whichever
+    // state actually won, and still log the rejected attempt.
+    const [current] = await tx
+      .select({ status: tickets.status, checkedInAt: tickets.checkedInAt })
+      .from(tickets)
+      .where(eq(tickets.id, ticket.id))
+      .limit(1);
+
+    const result: CheckInResult = current?.status === "checked_in" ? "already_used" : "invalid_ticket";
+
+    await recordScanInTransaction(tx, {
+      ticketId: ticket.id,
+      scannedBy: input.scannedBy,
+      result,
+      scannedAt,
+    });
+
+    return outcome({
+      result,
+      scannedAt,
+      checkedInAt: current?.checkedInAt ?? null,
+      ...identity,
+    });
+  });
 }

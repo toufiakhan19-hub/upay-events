@@ -58,12 +58,14 @@ export function heldSeatsFilter(eventId: string) {
   return and(eq(registrations.eventId, eventId), heldSeatCondition());
 }
 
-function countHeldSeatsInTransaction(tx: DatabaseTransaction, eventId: string): number {
-  const [row] = tx
+async function countHeldSeatsInTransaction(
+  tx: DatabaseTransaction,
+  eventId: string,
+): Promise<number> {
+  const [row] = await tx
     .select({ taken: count() })
     .from(registrations)
-    .where(heldSeatsFilter(eventId))
-    .all();
+    .where(heldSeatsFilter(eventId));
 
   return row?.taken ?? 0;
 }
@@ -93,9 +95,9 @@ function daysUntil(dateTime: string, now: Date): number {
  * Registers the attendee for the published event identified by `eventSlug`.
  *
  * The duplicate check, the capacity check, and every write run inside one
- * `BEGIN IMMEDIATE` transaction. Taking the write lock up front is what stops
- * the classic oversell: two requests cannot both read "one seat left", both
- * wait, and both insert.
+ * transaction that first locks the event row `FOR UPDATE`. Registrations for the
+ * same event are therefore serialized, which is what stops the classic oversell:
+ * two requests cannot both read "one seat left" and both insert.
  */
 export async function registerForEvent(input: {
   userId: string;
@@ -135,71 +137,59 @@ export async function registerForEvent(input: {
       });
 
   try {
-    return db.transaction(
-      (tx) => {
-        const [existing] = tx
-          .select({ id: registrations.id })
-          .from(registrations)
-          .where(
-            and(eq(registrations.userId, input.userId), eq(registrations.eventId, event.id)),
-          )
-          .all();
+    return await db.transaction(async (tx): Promise<RegisterResult> => {
+      await tx
+        .select({ id: events.id })
+        .from(events)
+        .where(eq(events.id, event.id))
+        .for("update");
 
-        if (existing) {
-          return { ok: false as const, reason: "already_registered" as const };
-        }
+      const [existing] = await tx
+        .select({ id: registrations.id })
+        .from(registrations)
+        .where(and(eq(registrations.userId, input.userId), eq(registrations.eventId, event.id)))
+        .limit(1);
 
-        if (countHeldSeatsInTransaction(tx, event.id) >= event.capacity) {
-          return { ok: false as const, reason: "event_full" as const };
-        }
+      if (existing) {
+        return { ok: false, reason: "already_registered" };
+      }
 
-        tx.insert(registrations)
-          .values({
-            id: registrationId,
-            userId: input.userId,
-            eventId: event.id,
-            status: "pending_payment",
-            daysBeforeEvent: daysUntil(event.dateTime, now),
-          })
-          .run();
+      if ((await countHeldSeatsInTransaction(tx, event.id)) >= event.capacity) {
+        return { ok: false, reason: "event_full" };
+      }
 
-        if (initiation) {
-          initiatePaymentInTransaction(tx, {
-            registrationId,
-            amountTaka: event.priceTaka,
-            providerReference: initiation.providerReference,
-          });
+      await tx.insert(registrations).values({
+        id: registrationId,
+        userId: input.userId,
+        eventId: event.id,
+        status: "pending_payment",
+        daysBeforeEvent: daysUntil(event.dateTime, now),
+      });
 
-          return {
-            ok: true as const,
-            registrationId,
-            status: "pending_payment" as const,
-            ticketId: null,
-          };
-        }
-
-        // Free event: no payment step, so finish inside the same transaction.
-        const { ticket } = completeRegistrationInTransaction(tx, {
+      if (initiation) {
+        await initiatePaymentInTransaction(tx, {
           registrationId,
-          amountTaka: 0,
-          transactionId: null,
-          paidAt: now,
+          amountTaka: event.priceTaka,
+          providerReference: initiation.providerReference,
         });
 
-        return {
-          ok: true as const,
-          registrationId,
-          status: "paid" as const,
-          ticketId: ticket.id,
-        };
-      },
-      { behavior: "immediate" },
-    );
+        return { ok: true, registrationId, status: "pending_payment", ticketId: null };
+      }
+
+      // Free event: no payment step, so finish inside the same transaction.
+      const { ticket } = await completeRegistrationInTransaction(tx, {
+        registrationId,
+        amountTaka: 0,
+        transactionId: null,
+        paidAt: now,
+      });
+
+      return { ok: true, registrationId, status: "paid", ticketId: ticket.id };
+    });
   } catch (error: unknown) {
     // `registrations_user_event_unique` is the last line of defence against a
-    // duplicate registration (PRD §12). Concurrent requests can both pass the
-    // check above — the write lock normally prevents that — and the loser lands
-    // here.
+    // duplicate registration (PRD §12). The event lock normally prevents two
+    // concurrent requests from both passing the check above; a loser lands here.
     if (isUniqueConstraintError(error)) {
       return { ok: false, reason: "already_registered" };
     }
@@ -208,13 +198,17 @@ export async function registerForEvent(input: {
   }
 }
 
-/** True for SQLite's unique and primary-key violations only. */
+/** Postgres `unique_violation` (SQLSTATE 23505), possibly wrapped by Drizzle. */
 function isUniqueConstraintError(error: unknown): boolean {
-  if (typeof error !== "object" || error === null || !("code" in error)) {
-    return false;
+  for (let current: unknown = error; current; current = (current as { cause?: unknown }).cause) {
+    if (typeof current !== "object") {
+      return false;
+    }
+
+    if ((current as { code?: unknown }).code === "23505") {
+      return true;
+    }
   }
 
-  const code = String((error as { code: unknown }).code);
-
-  return code === "SQLITE_CONSTRAINT_UNIQUE" || code === "SQLITE_CONSTRAINT_PRIMARYKEY";
+  return false;
 }

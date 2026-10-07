@@ -7,14 +7,14 @@ import { defineConfig } from "drizzle-kit";
  * resolves the same way it does at runtime.
  *
  * SQL migrations are generated into ./drizzle and committed, so a teammate can
- * bring the database up with `npm run db:migrate` and no extra setup.
+ * bring a Supabase database up with `npm run db:migrate` and no extra setup.
  */
 export default defineConfig({
   schema: "./src/db/schema.ts",
   out: "./drizzle",
-  dialect: "sqlite",
+  dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "file:./upay-events.db",
+    url: process.env.DATABASE_URL ?? "",
   },
   strict: true,
   verbose: true,

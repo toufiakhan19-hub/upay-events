@@ -21,7 +21,7 @@ import { failPaymentInTransaction, readPayment } from "./payments";
  * 1. an already-`paid` registration is answered from the existing ticket before
  *    the adapter is called, so a refresh never charges again;
  * 2. the provider call and the write are separated, and the write re-reads the
- *    registration inside a `BEGIN IMMEDIATE` transaction, so two simultaneous
+ *    registration `FOR UPDATE` inside a transaction, so two simultaneous
  *    submissions cannot both flip it to `paid`;
  * 3. `payments_registration_unique` allows one payment row per registration and
  *    `tickets_registration_unique` one ticket, so even a lost race updates the
@@ -158,13 +158,11 @@ export async function payForRegistration(input: {
   });
 
   if (capture.status === "failed") {
-    db.transaction(
-      (tx) =>
-        failPaymentInTransaction(tx, {
-          registrationId: target.registrationId,
-          amountTaka: target.priceTaka,
-        }),
-      { behavior: "immediate" },
+    await db.transaction((tx) =>
+      failPaymentInTransaction(tx, {
+        registrationId: target.registrationId,
+        amountTaka: target.priceTaka,
+      }),
     );
 
     return { ok: false, reason: "payment_failed", message: capture.message };
@@ -180,23 +178,21 @@ export async function payForRegistration(input: {
 
 /**
  * The successful path: payment success, registration `paid`, and the ticket are
- * written in one immediate transaction, so a failure leaves nothing behind.
+ * written in one transaction, so a failure leaves nothing behind.
  */
-function completeRegistration(
+async function completeRegistration(
   registrationId: string,
   amountTaka: number,
   transactionId: string | null,
   paidAt: Date,
-): PayResult {
-  const completed = db.transaction(
-    (tx) =>
-      completeRegistrationInTransaction(tx, {
-        registrationId,
-        amountTaka,
-        transactionId,
-        paidAt,
-      }),
-    { behavior: "immediate" },
+): Promise<PayResult> {
+  const completed = await db.transaction((tx) =>
+    completeRegistrationInTransaction(tx, {
+      registrationId,
+      amountTaka,
+      transactionId,
+      paidAt,
+    }),
   );
 
   return { ok: true, ticketId: completed.ticket.id, replayed: completed.replayed };

@@ -30,7 +30,7 @@ function withDefault(name: string, fallback: string): string {
 const AI_SERVICE_URL_FALLBACK = "http://127.0.0.1:8000";
 
 export const env = {
-  /** SQLite location, e.g. `file:./data/upay-events.db`. */
+  /** Supabase Postgres connection string, e.g. `postgresql://postgres.<ref>:<password>@<host>:5432/postgres`. */
   databaseUrl: required("DATABASE_URL"),
   /**
    * Base URL of the AI service (docs/API_CONTRACT.md §2).

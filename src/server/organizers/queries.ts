@@ -255,9 +255,11 @@ async function readAttendanceMetrics(
       eventId: registrations.eventId,
       // Distinct tickets: one attendee is one attendance, and duplicate scans
       // are logged separately with `already_used`.
-      checkedInAttendees: sql<number>`count(distinct case when ${checkIns.result} = 'checked_in' then ${checkIns.ticketId} end)`,
-      duplicateScansRejected: sql<number>`sum(case when ${checkIns.result} = 'already_used' then 1 else 0 end)`,
-      invalidScansRejected: sql<number>`sum(case when ${checkIns.result} = 'invalid_ticket' then 1 else 0 end)`,
+      // Postgres returns `count` / `sum` as bigint, which the driver hands back as a
+      // string; `mapWith(Number)` keeps the field a real number.
+      checkedInAttendees: sql<number>`count(distinct case when ${checkIns.result} = 'checked_in' then ${checkIns.ticketId} end)`.mapWith(Number),
+      duplicateScansRejected: sql<number>`sum(case when ${checkIns.result} = 'already_used' then 1 else 0 end)`.mapWith(Number),
+      invalidScansRejected: sql<number>`sum(case when ${checkIns.result} = 'invalid_ticket' then 1 else 0 end)`.mapWith(Number),
       lastCheckInAt: sql<string | null>`max(case when ${checkIns.result} = 'checked_in' then ${checkIns.scannedAt} end)`,
     })
     .from(checkIns)

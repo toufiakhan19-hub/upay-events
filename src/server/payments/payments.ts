@@ -21,11 +21,12 @@ import { toUtcTimestamp } from "@/lib/time";
  */
 
 /** Payment opened, awaiting capture. Written when a registration is created. */
-export function initiatePaymentInTransaction(
+export async function initiatePaymentInTransaction(
   tx: DatabaseTransaction,
   input: { registrationId: string; amountTaka: number; providerReference: string },
-): void {
-  tx.insert(payments)
+): Promise<void> {
+  await tx
+    .insert(payments)
     .values({
       id: newId(),
       registrationId: input.registrationId,
@@ -33,8 +34,7 @@ export function initiatePaymentInTransaction(
       status: "pending",
       mockTransactionId: input.providerReference,
     })
-    .onConflictDoNothing({ target: payments.registrationId })
-    .run();
+    .onConflictDoNothing({ target: payments.registrationId });
 }
 
 /**
@@ -44,11 +44,12 @@ export function initiatePaymentInTransaction(
  * `mockTransactionId` is cleared: nothing was transacted, so there is no
  * transaction id to keep.
  */
-export function failPaymentInTransaction(
+export async function failPaymentInTransaction(
   tx: DatabaseTransaction,
   input: { registrationId: string; amountTaka: number },
-): void {
-  tx.insert(payments)
+): Promise<void> {
+  await tx
+    .insert(payments)
     .values({
       id: newId(),
       registrationId: input.registrationId,
@@ -59,8 +60,7 @@ export function failPaymentInTransaction(
     .onConflictDoUpdate({
       target: payments.registrationId,
       set: { status: "failed", mockTransactionId: null },
-    })
-    .run();
+    });
 }
 
 /**
@@ -70,7 +70,7 @@ export function failPaymentInTransaction(
  * registration, which is recorded as a zero-value successful payment so the
  * invariant "a ticket exists only when a payment succeeded" stays in one place.
  */
-export function succeedPaymentInTransaction(
+export async function succeedPaymentInTransaction(
   tx: DatabaseTransaction,
   input: {
     registrationId: string;
@@ -78,8 +78,9 @@ export function succeedPaymentInTransaction(
     transactionId: string | null;
     paidAt: Date;
   },
-): void {
-  tx.insert(payments)
+): Promise<void> {
+  await tx
+    .insert(payments)
     .values({
       id: newId(),
       registrationId: input.registrationId,
@@ -96,8 +97,7 @@ export function succeedPaymentInTransaction(
         mockTransactionId: input.transactionId,
         paidAt: toUtcTimestamp(input.paidAt),
       },
-    })
-    .run();
+    });
 }
 
 /** The payment row for a registration, if one exists. */

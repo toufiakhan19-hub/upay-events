@@ -145,7 +145,7 @@ and never block a registration, payment or check-in.
 | Language | TypeScript 5 (web app), Python 3 (AI service) |
 | Framework | Next.js 16 (App Router, Server Components, Server Actions), React 19 |
 | Styling | Tailwind CSS v4 |
-| Database | SQLite via `better-sqlite3` |
+| Database | PostgreSQL on [Supabase](https://supabase.com), via the `postgres` driver |
 | ORM / migrations | Drizzle ORM, Drizzle Kit |
 | QR generation | `qrcode` |
 | QR scanning | `jsqr` (in-browser camera decoding) |
@@ -155,7 +155,8 @@ and never block a registration, payment or check-in.
 | AI models | XGBoost no-show classifier (isotonic-calibrated), weighted-scoring fallback; optional LLM only for rewording explanations |
 | Tooling | ESLint 9 (`eslint-config-next`), `tsx` for scripts, `dotenv` |
 
-No paid external APIs or API keys are required to run the web app.
+The only external service the web app needs is a Supabase project (the free
+tier is enough). No paid APIs or API keys are required.
 
 ---
 
@@ -166,8 +167,8 @@ No paid external APIs or API keys are required to run the web app.
 | Node.js | **20.9 or newer** (developed on Node 24) |
 | npm | 10+ (ships with Node) |
 | Git | any recent version |
+| Supabase account | Free tier. Provides the PostgreSQL database. |
 | Python | 3.10+ — only to run the AI service locally |
-| C++ build tools | Usually **not** needed: `better-sqlite3` ships prebuilt binaries. If `npm install` tries to compile it, install Visual Studio Build Tools (Windows), Xcode CLT (macOS) or `build-essential` + `python3` (Linux). |
 | Browser | Any modern browser. Camera QR scanning needs camera permission and a **secure context** (`localhost` or HTTPS). |
 | Hardware | Any laptop; ~500 MB free disk for dependencies. A webcam or phone camera is optional (manual ticket-ID entry works without one). |
 
@@ -175,7 +176,21 @@ No paid external APIs or API keys are required to run the web app.
 
 ## 5. Installation and setup
 
-### 5.1 Web app
+### 5.1 Create the Supabase database
+
+1. Sign in at https://supabase.com and click **New project**. Pick a region
+   close to you (e.g. Singapore) and save the **database password** you set.
+2. When the project is ready, click **Connect** at the top of the dashboard.
+3. Under **Connection string**, choose **Session pooler** and copy the URI.
+   It looks like
+   `postgresql://postgres.<project-ref>:[YOUR-PASSWORD]@aws-0-<region>.pooler.supabase.com:5432/postgres`.
+4. Replace `[YOUR-PASSWORD]` with your database password. If the password
+   contains characters such as `@`, `#` or `/`, URL-encode them.
+
+The session pooler works on IPv4 networks and supports migrations, so one
+connection string is enough for everything below.
+
+### 5.2 Web app
 
 ```bash
 # 1. Clone
@@ -185,10 +200,11 @@ cd upay-events
 # 2. Install dependencies
 npm install
 
-# 3. Create your local environment file
+# 3. Create your local environment file, then paste your Supabase
+#    connection string into DATABASE_URL
 cp .env.example .env          # Windows PowerShell: Copy-Item .env.example .env
 
-# 4. Create the SQLite database and tables
+# 4. Create the tables in Supabase
 npm run db:migrate
 
 # 5. Seed demo organizers and events (safe to re-run)
@@ -213,7 +229,10 @@ It deliberately seeds **no** users, registrations, payments or tickets. Those
 are created by actually using the app, so every number on the dashboard comes
 from a real flow.
 
-### 5.2 AI service (for live forecasts)
+After step 4 you can see all 12 tables in the Supabase dashboard under
+**Table Editor**.
+
+### 5.3 AI service (for live forecasts)
 
 The organizer dashboard calls a separate Python FastAPI service for forecasts.
 Its interface is fully specified in [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md);
@@ -244,13 +263,13 @@ committed. No secrets are required.
 
 | Variable | Required | Example / default | Purpose |
 | --- | --- | --- | --- |
-| `DATABASE_URL` | **Yes** | `file:./upay-events.db` | Path to the SQLite database file. The `file:` prefix is optional. The app refuses to start if this is missing. |
+| `DATABASE_URL` | **Yes** | `postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres` | Supabase Postgres connection string (Session pooler, see §5.1). Used by the app, `db:migrate` and `db:seed`. The app refuses to start if this is missing. This value contains your database password — never commit it. |
 | `AI_SERVICE_URL` | No | `http://127.0.0.1:8000` | Base URL of the Python AI service. Called server-to-server only, never from the browser. Defaults to `http://127.0.0.1:8000` if unset. |
 
 Example `.env`:
 
 ```dotenv
-DATABASE_URL="file:./upay-events.db"
+DATABASE_URL="postgresql://postgres.<project-ref>:<your-db-password>@aws-0-<region>.pooler.supabase.com:5432/postgres"
 AI_SERVICE_URL="http://127.0.0.1:8000"
 ```
 
@@ -284,8 +303,9 @@ npm run build
 npm run start
 ```
 
-To reset all demo data, stop the server, delete `upay-events.db`, then run
-`npm run db:migrate` and `npm run db:seed` again.
+To reset all demo data, open the Supabase **SQL Editor** and run
+`drop schema public cascade; create schema public; drop schema if exists drizzle cascade;`,
+then run `npm run db:migrate` and `npm run db:seed` again.
 
 ---
 
@@ -404,19 +424,25 @@ latency under 3000 ms for a 500-row batch).
 
 ## 10. Other configuration
 
-- **Database file.** SQLite is stored at `./upay-events.db` (from
-  `DATABASE_URL`) and is git-ignored. Migrations in `drizzle/` are committed and
-  must be applied with `npm run db:migrate` before first run.
-- **No external accounts or API keys** are needed for the web app. upay login
-  and payment are simulated in-process.
+- **Database.** PostgreSQL on Supabase. Migrations in `drizzle/` are
+  committed and must be applied with `npm run db:migrate` before first run.
+- **Row-level security.** RLS is enabled on every table with no policies. The
+  app connects as the database owner through `DATABASE_URL`, which bypasses
+  RLS, while Supabase's public Data API (anon key) cannot read or write any
+  row. The app does not use the Supabase JS client or anon key.
+- **No other accounts or API keys** are needed for the web app. upay login and
+  payment are simulated in-process.
 - **Organizer access is a demo picker, not authentication.** Anyone who opens
   `/organizer` can act as any seeded organization. Data is still scoped to the
   selected organizer inside every query.
 - **Camera scanning** requires browser camera permission and only works on
   `localhost` or HTTPS. Manual ticket-ID entry works everywhere.
-- **Hosting note.** SQLite needs a writable, persistent disk. Serverless
-  platforms with read-only or ephemeral file systems will lose data between
-  requests; deploy on a host with a persistent volume, or run locally.
+- **Hosting.** Because the database is hosted by Supabase, the web app can be
+  deployed to Vercel or any Node host. Set `DATABASE_URL` and `AI_SERVICE_URL`
+  in the host's environment settings. On serverless hosts, Supabase's
+  **Transaction pooler** string (port `6543`) handles many short-lived
+  connections better; the app already disables prepared statements so it works
+  with either pooler.
 - **Ports.** Web app on `3000`, AI service on `8000`. Change the AI port by
   updating `AI_SERVICE_URL`.
 - **Cookies.** `upay_session` (attendee, 30 days) and `upay_organizer`
@@ -441,7 +467,7 @@ Next.js server — Server Actions + Route Handlers
   └── src/server/ai/            feature mapping, HTTP client, response validation
         │                                   │
         ▼                                   ▼ HTTP/JSON (server-to-server)
-SQLite (Drizzle ORM)               Python FastAPI AI service (ai/)
+Supabase Postgres (Drizzle ORM)    Python FastAPI AI service (ai/)
 users, sessions, organizers,         • synthetic data generator
 events, registrations, payments,     • XGBoost no-show model
 tickets, check-ins, reminders,       • event forecast aggregation
@@ -460,7 +486,7 @@ src/
     organizer/       organizer picker, event dashboard, check-in
     api/             health, check-in scan/live, forecast refresh
   components/        UI components (QR scanner, AI panel, funnel, cards)
-  db/                schema, enums, SQLite connection (server-only)
+  db/                schema, enums, Postgres connection (server-only)
   lib/               env, ids, formatting, time helpers
   server/            all server-only business logic (see diagram)
 scripts/seed.ts      demo organizers and events

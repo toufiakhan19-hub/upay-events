@@ -13,18 +13,16 @@
  * created by actually logging in.
  *
  * This file runs in plain Node (via `tsx`), not inside Next.js, so it opens its
- * own SQLite handle through `src/db/connection.ts` instead of the
+ * own Postgres connection through `src/db/connection.ts` instead of the
  * `server-only` app client.
  */
 
 import "dotenv/config";
 
-import { resolve } from "node:path";
-
 import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { drizzle } from "drizzle-orm/postgres-js";
 
-import { openSqliteConnection } from "../src/db/connection";
+import { openPostgresConnection } from "../src/db/connection";
 import { events, organizers } from "../src/db/schema";
 import type { EventCategory, LocationType } from "../src/db/enums";
 import { newId } from "../src/lib/ids";
@@ -118,11 +116,17 @@ const EVENTS: EventSeed[] = [
   },
 ];
 
-function openDatabase() {
-  const databaseUrl = process.env.DATABASE_URL ?? "file:./upay-events.db";
-  const databasePath = resolve(process.cwd(), databaseUrl.replace(/^file:/, ""));
+const databaseUrl = process.env.DATABASE_URL;
 
-  return drizzle(openSqliteConnection(databasePath));
+if (!databaseUrl) {
+  console.error("Missing DATABASE_URL. Copy .env.example to .env and set your Supabase connection string.");
+  process.exit(1);
+}
+
+const client = openPostgresConnection(databaseUrl, { max: 1 });
+
+function openDatabase() {
+  return drizzle(client);
 }
 
 async function ensureOrganizer(
@@ -213,16 +217,20 @@ async function seed() {
 }
 
 seed()
-  .then(() => {
+  .then(async () => {
+    await client.end();
     process.exit(0);
   })
-  .catch((error: unknown) => {
+  .catch(async (error: unknown) => {
     console.error("Seed failed.");
 
-    if (error instanceof Error && /no such table/i.test(error.message)) {
+    const message = error instanceof Error ? `${error.message} ${String(error.cause ?? "")}` : "";
+
+    if (/does not exist/i.test(message)) {
       console.error("The schema is missing. Run `npm run db:migrate` first.");
     }
 
     console.error(error);
+    await client.end({ timeout: 1 });
     process.exit(1);
   });

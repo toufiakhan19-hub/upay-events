@@ -10,15 +10,17 @@ import { issueTicketInTransaction, type IssuedTicket } from "@/server/tickets/ti
 /**
  * Turns a held registration into a paid registration with a ticket.
  *
- * One `better-sqlite3` transaction covers all three writes, so the app can
- * never end up with a paid registration and no ticket, or a ticket whose
- * payment failed. It must always be called inside a transaction opened by the
- * caller (`src/server/payments/checkout.ts` or `src/server/registrations/`),
- * never on its own.
+ * One transaction covers all three writes, so the app can never end up with a
+ * paid registration and no ticket, or a ticket whose payment failed. It must
+ * always be called inside a transaction opened by the caller
+ * (`src/server/payments/checkout.ts` or `src/server/registrations/`), never on
+ * its own.
  *
  * Idempotent by construction: a registration that is already `paid` returns its
  * existing ticket and writes nothing, which is what makes a double-clicked
- * payment button or a page refresh safe.
+ * payment button or a page refresh safe. The registration row is locked
+ * `FOR UPDATE`, so two concurrent completions are serialized and the second one
+ * sees `paid`.
  */
 
 export type CompletionResult = {
@@ -27,7 +29,7 @@ export type CompletionResult = {
   replayed: boolean;
 };
 
-export function completeRegistrationInTransaction(
+export async function completeRegistrationInTransaction(
   tx: DatabaseTransaction,
   input: {
     registrationId: string;
@@ -37,12 +39,12 @@ export function completeRegistrationInTransaction(
     transactionId: string | null;
     paidAt: Date;
   },
-): CompletionResult {
-  const [registration] = tx
+): Promise<CompletionResult> {
+  const [registration] = await tx
     .select({ id: registrations.id, status: registrations.status })
     .from(registrations)
     .where(eq(registrations.id, input.registrationId))
-    .all();
+    .for("update");
 
   if (!registration) {
     throw new Error("Cannot complete a registration that does not exist.");
@@ -55,20 +57,20 @@ export function completeRegistrationInTransaction(
   // Already paid: the payment and ticket exist. Returning them keeps a repeated
   // submission idempotent instead of issuing a second ticket.
   if (registration.status === "paid") {
-    return { ticket: issueTicketInTransaction(tx, registration.id), replayed: true };
+    return { ticket: await issueTicketInTransaction(tx, registration.id), replayed: true };
   }
 
-  succeedPaymentInTransaction(tx, {
+  await succeedPaymentInTransaction(tx, {
     registrationId: registration.id,
     amountTaka: input.amountTaka,
     transactionId: input.transactionId,
     paidAt: input.paidAt,
   });
 
-  tx.update(registrations)
+  await tx
+    .update(registrations)
     .set({ status: "paid" })
-    .where(eq(registrations.id, registration.id))
-    .run();
+    .where(eq(registrations.id, registration.id));
 
-  return { ticket: issueTicketInTransaction(tx, registration.id), replayed: false };
+  return { ticket: await issueTicketInTransaction(tx, registration.id), replayed: false };
 }

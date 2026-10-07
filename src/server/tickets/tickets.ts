@@ -61,15 +61,15 @@ export function ticketQrPayload(qrToken: string): string {
  * payment that justified it, and vice versa. `tickets_registration_unique` is
  * the final guarantee of exactly one ticket per registration.
  */
-export function issueTicketInTransaction(
+export async function issueTicketInTransaction(
   tx: DatabaseTransaction,
   registrationId: string,
-): IssuedTicket {
-  const [existing] = tx
+): Promise<IssuedTicket> {
+  const [existing] = await tx
     .select({ id: tickets.id, registrationId: tickets.registrationId, qrToken: tickets.qrToken })
     .from(tickets)
     .where(eq(tickets.registrationId, registrationId))
-    .all();
+    .limit(1);
 
   if (existing) {
     return existing;
@@ -81,14 +81,12 @@ export function issueTicketInTransaction(
     qrToken: newOpaqueToken(),
   };
 
-  tx.insert(tickets)
-    .values({
-      id: ticket.id,
-      registrationId: ticket.registrationId,
-      qrToken: ticket.qrToken,
-      status: "valid",
-    })
-    .run();
+  await tx.insert(tickets).values({
+    id: ticket.id,
+    registrationId: ticket.registrationId,
+    qrToken: ticket.qrToken,
+    status: "valid",
+  });
 
   return ticket;
 }

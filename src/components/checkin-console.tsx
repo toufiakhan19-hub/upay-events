@@ -32,7 +32,7 @@ import { QrScanner } from "./qr-scanner";
 const SCAN_ENDPOINT = "/api/checkin/scan";
 const LIVE_ENDPOINT = "/api/checkin/live";
 
-/** Live refresh cadence. Short enough to look live, long enough not to hammer SQLite. */
+/** Live refresh cadence. Short enough to look live, long enough not to hammer the database. */
 const LIVE_REFRESH_MS = 10_000;
 
 /** The three scan results plus the two request-level failures the console can show. */
