@@ -11,7 +11,14 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx scripts/seed.ts",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "ai:install": "python -m pip install -r ai/requirements-train.txt",
+    "ai:dev": "python -m uvicorn app.main:app --app-dir ai --host 127.0.0.1 --port 8000",
+    "ai:data": "python ai/train/generate_data.py",
+    "ai:train": "python ai/train/train_model.py",
+    "ai:uplift": "python ai/train/train_uplift.py",
+    "ai:loadtest": "python ai/tests/loadtest.py",
+    "ai:test": "python -m pytest ai/tests -q"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.3",

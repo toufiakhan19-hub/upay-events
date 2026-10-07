@@ -1,0 +1,139 @@
+{
+  "model_version": "no-show-xgb-2026.10.07",
+  "model_family": "xgboost",
+  "trained_at": "2026-10-07T04:51:38Z",
+  "training_rows": 2400,
+  "test_rows": 600,
+  "metrics": {
+    "roc_auc": 0.785,
+    "precision": 0.661,
+    "recall": 0.688,
+    "accuracy": 0.698,
+    "brier_score": 0.189,
+    "positive_class": "attends"
+  },
+  "roc_auc_target": 0.75,
+  "meets_roc_auc_target": true,
+  "calibration": {
+    "method": null,
+    "expected_calibration_error": 0.06,
+    "bins": 10,
+    "reliability": [
+      {
+        "bin": "0.0-0.1",
+        "count": 58,
+        "mean_predicted": 0.025,
+        "observed_rate": 0.034
+      },
+      {
+        "bin": "0.1-0.2",
+        "count": 74,
+        "mean_predicted": 0.156,
+        "observed_rate": 0.257
+      },
+      {
+        "bin": "0.2-0.3",
+        "count": 67,
+        "mean_predicted": 0.248,
+        "observed_rate": 0.194
+      },
+      {
+        "bin": "0.3-0.4",
+        "count": 62,
+        "mean_predicted": 0.354,
+        "observed_rate": 0.403
+      },
+      {
+        "bin": "0.4-0.5",
+        "count": 56,
+        "mean_predicted": 0.452,
+        "observed_rate": 0.464
+      },
+      {
+        "bin": "0.5-0.6",
+        "count": 69,
+        "mean_predicted": 0.553,
+        "observed_rate": 0.406
+      },
+      {
+        "bin": "0.6-0.7",
+        "count": 53,
+        "mean_predicted": 0.645,
+        "observed_rate": 0.604
+      },
+      {
+        "bin": "0.7-0.8",
+        "count": 76,
+        "mean_predicted": 0.753,
+        "observed_rate": 0.776
+      },
+      {
+        "bin": "0.8-0.9",
+        "count": 56,
+        "mean_predicted": 0.849,
+        "observed_rate": 0.786
+      },
+      {
+        "bin": "0.9-1.0",
+        "count": 29,
+        "mean_predicted": 0.931,
+        "observed_rate": 0.828
+      }
+    ],
+    "note": "Uncalibrated XGBoost probabilities, measured on the held-out synthetic test set."
+  },
+  "features": [
+    "event_category",
+    "ticket_price_taka",
+    "days_before_event_registered",
+    "payment_delay_hours",
+    "event_day_of_week",
+    "event_start_hour",
+    "location_type",
+    "reminder_status",
+    "prior_attendance_count",
+    "is_cancelled"
+  ],
+  "feature_importance": [
+    {
+      "feature": "reminder_status",
+      "importance": 0.384
+    },
+    {
+      "feature": "is_cancelled",
+      "importance": 0.199
+    },
+    {
+      "feature": "event_category",
+      "importance": 0.147
+    },
+    {
+      "feature": "location_type",
+      "importance": 0.078
+    },
+    {
+      "feature": "prior_attendance_count",
+      "importance": 0.049
+    },
+    {
+      "feature": "days_before_event_registered",
+      "importance": 0.04
+    },
+    {
+      "feature": "payment_delay_hours",
+      "importance": 0.032
+    },
+    {
+      "feature": "event_day_of_week",
+      "importance": 0.025
+    },
+    {
+      "feature": "ticket_price_taka",
+      "importance": 0.024
+    },
+    {
+      "feature": "event_start_hour",
+      "importance": 0.022
+    }
+  ]
+}

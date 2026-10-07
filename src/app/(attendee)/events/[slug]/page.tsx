@@ -2,7 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { categoryLabel, formatTaka, locationTypeLabel } from "@/lib/format";
+import {
+  categoryLabel,
+  formatEventDate,
+  formatEventTime,
+  formatTaka,
+  locationTypeLabel,
+} from "@/lib/format";
 import { requireCurrentUser } from "@/server/auth/session";
 import { getPublishedEventBySlug } from "@/server/events/queries";
 import { countHeldSeats } from "@/server/registrations/registrations";
@@ -10,6 +16,7 @@ import { getAttendeeEventState } from "@/server/registrations/state";
 
 import { EventDateTime } from "./event-date-time";
 import { RegisterButton } from "./register-button";
+import { ShareEvent } from "./share-event";
 
 type EventPageProps = {
   params: Promise<{ slug: string }>;
@@ -155,6 +162,12 @@ export default async function EventPage({ params }: EventPageProps) {
               </p>
             </>
           )}
+
+          <ShareEvent
+            slug={event.slug}
+            title={event.title}
+            when={`${formatEventDate(event.dateTime)}, ${formatEventTime(event.dateTime)}`}
+          />
 
           <Link href="/events" className="text-xs underline">
             Back to all events

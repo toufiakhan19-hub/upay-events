@@ -169,8 +169,8 @@ export default async function OrganizerDashboardPage({
         Every number on this page comes from the database: registrations from{" "}
         <code className="rounded bg-muted px-1 py-0.5">registrations</code>, attendance from{" "}
         <code className="rounded bg-muted px-1 py-0.5">check_ins</code>. Nothing is estimated. The
-        AI prediction and recommendation panels live on each event page and stay empty until the AI
-        service is connected.
+        AI prediction and recommendation panels live on each event page and stay empty until a
+        forecast is generated there.
       </p>
     </div>
   );

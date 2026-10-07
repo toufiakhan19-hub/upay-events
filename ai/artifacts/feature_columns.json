@@ -1,0 +1,23 @@
+[
+  "ticket_price_taka",
+  "days_before_event_registered",
+  "payment_delay_hours",
+  "event_day_of_week",
+  "event_start_hour",
+  "prior_attendance_count",
+  "is_cancelled",
+  "event_category=hackathon",
+  "event_category=workshop",
+  "event_category=cultural",
+  "event_category=career_fair",
+  "event_category=conference",
+  "event_category=sports",
+  "event_category=other",
+  "location_type=campus",
+  "location_type=city",
+  "location_type=online",
+  "reminder_status=none",
+  "reminder_status=sent",
+  "reminder_status=opened",
+  "reminder_status=confirmed"
+]

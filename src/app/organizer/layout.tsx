@@ -24,7 +24,7 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
         <div className="mx-auto w-full max-w-6xl px-4 py-6 text-xs text-muted-foreground sm:px-6">
           Organizer dashboard — demo build. Registration, payment, and check-in figures are read
           from the live database. Organizer access is a demo selector, not an authentication system.
-          The AI panels stay empty until the AI service is connected.
+          AI forecasts come from a model trained on synthetic data only.
         </div>
       </footer>
     </>

@@ -1,0 +1,61 @@
+{
+  "run_at": "2026-10-07T04:53:22Z",
+  "target": "http://127.0.0.1:8000",
+  "model_version": "no-show-xgb-2026.10.07",
+  "machine": "Windows 11, Intel64 Family 6 Model 142 Stepping 12, GenuineIntel",
+  "server": "single uvicorn worker",
+  "results": [
+    {
+      "scenario": "Forecast, 500 registrations, one at a time",
+      "requests": 20,
+      "concurrency": 1,
+      "registrations_per_request": 500,
+      "errors": 0,
+      "throughput_rps": 23.3,
+      "wall_seconds": 0.86,
+      "p50_ms": 43,
+      "p95_ms": 45,
+      "p99_ms": 45,
+      "max_ms": 45
+    },
+    {
+      "scenario": "Forecast, 50 registrations",
+      "requests": 100,
+      "concurrency": 100,
+      "registrations_per_request": 50,
+      "errors": 0,
+      "throughput_rps": 88.3,
+      "wall_seconds": 1.13,
+      "p50_ms": 477,
+      "p95_ms": 997,
+      "p99_ms": 1025,
+      "max_ms": 1035
+    },
+    {
+      "scenario": "Forecast, 500 registrations",
+      "requests": 100,
+      "concurrency": 100,
+      "registrations_per_request": 500,
+      "errors": 0,
+      "throughput_rps": 28.6,
+      "wall_seconds": 3.5,
+      "p50_ms": 1850,
+      "p95_ms": 3096,
+      "p99_ms": 3351,
+      "max_ms": 3359
+    },
+    {
+      "scenario": "Forecast, 2,000 registrations (contract max)",
+      "requests": 20,
+      "concurrency": 10,
+      "registrations_per_request": 2000,
+      "errors": 0,
+      "throughput_rps": 8.5,
+      "wall_seconds": 2.35,
+      "p50_ms": 985,
+      "p95_ms": 1348,
+      "p99_ms": 1404,
+      "max_ms": 1418
+    }
+  ]
+}

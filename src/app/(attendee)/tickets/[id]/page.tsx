@@ -94,7 +94,7 @@ export default async function TicketPage({ params }: TicketPageProps) {
 
         <p className="text-xs text-muted-foreground">
           Show this code at the entrance. The QR carries only a random ticket token — no name,
-          phone number, or payment data. Scanning and check-in arrive in a later phase.
+          phone number, or payment data. Each ticket can be checked in once.
         </p>
       </section>
 

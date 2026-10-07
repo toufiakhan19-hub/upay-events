@@ -58,8 +58,8 @@ export default async function Home() {
       </section>
 
       <p className="text-xs text-muted-foreground">
-        Demo build: upay login and payments are simulated and no real account is created. Payments,
-        QR tickets, and AI forecasts ship in later phases.
+        Demo build: upay login and payments are simulated and no real account is created. AI
+        forecasts come from a model trained on synthetic data only.
       </p>
     </main>
   );

@@ -7,6 +7,8 @@
 *.db-shm
 __pycache__/
 .venv/
+.pytest_cache/
+ai/train/synthetic_data.csv
 node_modules/
 
 # Next.js

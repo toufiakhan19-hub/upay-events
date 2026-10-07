@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { AiPanel, ReasonList } from "@/components/ai-panel";
 import { ForecastRefresh } from "@/components/forecast-refresh";
 import { RegistrationFunnel } from "@/components/funnel";
+import { MessageDrafts } from "@/components/message-drafts";
 import { MetricCard, MetricGrid } from "@/components/metric-card";
 import {
   categoryLabel,
@@ -20,6 +21,7 @@ import {
   locationTypeLabel,
   recommendationActionLabel,
 } from "@/lib/format";
+import { messageDrafts } from "@/lib/message-drafts";
 import { requireOrganizer } from "@/server/organizers/access";
 import { getOrganizerEventDashboard } from "@/server/organizers/queries";
 
@@ -60,6 +62,7 @@ export default async function OrganizerEventDashboardPage({ params }: EventDashb
   const { event, registrations, attendance, forecast } = dashboard;
   const hasRegistrations = registrations.totalRegistrations > 0;
   const hasPaid = registrations.paidRegistrations > 0;
+  const drafts = forecast ? messageDrafts(forecast.recommendation.action_type, event) : null;
 
   return (
     <div className="flex flex-col gap-8">
@@ -352,6 +355,8 @@ export default async function OrganizerEventDashboardPage({ params }: EventDashb
                 Suggested catering headcount: {formatCount(forecast.recommendation.catering_headcount)}
               </p>
             ) : null}
+
+            {drafts ? <MessageDrafts drafts={drafts} eventPath={`/events/${event.slug}`} /> : null}
           </div>
         ) : null}
       </AiPanel>

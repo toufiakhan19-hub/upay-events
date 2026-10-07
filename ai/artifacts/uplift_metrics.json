@@ -1,0 +1,39 @@
+{
+  "model_version": "reminder-uplift-tlearner-2026.10.07",
+  "model_family": "xgboost_t_learner",
+  "treatment": "confirmation reminder sent",
+  "outcome": "attended",
+  "trained_at": "2026-10-07T04:49:25Z",
+  "training_rows": 5136,
+  "test_rows": 2202,
+  "data_source": "synthetic randomized reminder experiment",
+  "features": [
+    "ticket_price_taka",
+    "days_before_event_registered",
+    "payment_delay_hours",
+    "event_day_of_week",
+    "event_start_hour",
+    "prior_attendance_count",
+    "event_category=hackathon",
+    "event_category=workshop",
+    "event_category=cultural",
+    "event_category=career_fair",
+    "event_category=conference",
+    "event_category=sports",
+    "event_category=other",
+    "location_type=campus",
+    "location_type=city",
+    "location_type=online"
+  ],
+  "metrics": {
+    "observed_average_treatment_effect": 0.1579,
+    "mean_predicted_uplift": 0.1537,
+    "qini_coefficient": 0.0124,
+    "qini_coefficient_oracle": 0.0156,
+    "qini_coefficient_ratio_to_oracle": 0.798,
+    "auuc": 0.1033,
+    "auuc_random": 0.079,
+    "top_30pct_share_of_incremental_attendees": 0.541,
+    "spearman_with_true_uplift": 0.773
+  }
+}
